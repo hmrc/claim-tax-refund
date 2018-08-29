@@ -21,40 +21,54 @@ import config.SpecBase
 import models.{Submission, SubmissionResponse}
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
+import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers._
-import play.api.test.{FakeRequest, Helpers}
+import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
 class SubmissionControllerSpec extends SpecBase with MockitoSugar {
-  val mockSubmissionService: SubmissionService = mock[SubmissionService]
-  val submissionResponse = SubmissionResponse("12345", "12345-SubmissionCTR-20171023-iform.pdf")
-  val mockSubmission = Submission("pdf", "metadata", "xml")
+  private val mockSubmissionService: SubmissionService = mock[SubmissionService]
+  private val submissionResponse = SubmissionResponse("12345", "12345-SubmissionCTR-20171023-iform.pdf")
+  private val mockSubmission = Submission("pdf", "metadata", "xml")
   implicit lazy val materializer: Materializer = app.materializer
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+
+  private val fakeRequest = FakeRequest(
+    method = "POST",
+    uri = "",
+    headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+    body = Json.toJson(mockSubmission)
+  )
+
+  private val validData = Json.parse(
+    """
+      |{
+      |   "id": "12345",
+      |   "filename": "12345-SubmissionCTR-20171023-iform.pdf"
+      |}
+      |""".stripMargin)
 
   def controller() = new SubmissionController(mockSubmissionService)
 
   "Submission controller" must {
     "return Ok with a envelopeId status" when {
       "valid payload is submitted" in {
-        when(mockSubmissionService.submit(mockSubmission)) thenReturn Future.successful(SubmissionResponse("123", "asdf"))
-        val result: Future[Result] = Helpers.call(controller().submit(), FakeRequest("POST", "/submit"))
+        when(mockSubmissionService.submit(mockSubmission)) thenReturn Future.successful(submissionResponse)
+        val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
 
         status(result) mustBe OK
-        contentAsString(result) mustBe "123"
+        contentAsJson(result) mustBe validData
       }
     }
 
     "return 500" when {
       "invalid payload is submitted" in {
-        when(mockSubmissionService.submit(mockSubmission)) thenReturn Future.failed(new Throwable)
-        val result: Future[Result] = Helpers.call(controller().submit(), FakeRequest("POST", "/submit"))
+        when(mockSubmissionService.submit(mockSubmission)).thenReturn(Future.failed(new Exception))
+        val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
 
-        result mustBe INTERNAL_SERVER_ERROR
+        status(result) mustBe INTERNAL_SERVER_ERROR
       }
     }
   }
