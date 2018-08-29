@@ -30,25 +30,21 @@ class MicroserviceAppConfig @Inject()(override val runModeConfiguration: Configu
 
   private def loadBoolean(key: String): Boolean = runModeConfiguration.getBoolean(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
 
-  lazy val appName: String = runModeConfiguration.underlying.getString("appName")
-  lazy val fileUploadUrl: String = baseUrl("file-upload")
-  lazy val fileUploadFrontendUrl: String = baseUrl("file-upload-frontend")
-  lazy val fileUploadCallbackUrl: String = loadConfig(s"microservice.services.file-upload.callbackUrl")
+  val appName: String = runModeConfiguration.underlying.getString("appName")
+  val fileUploadUrl: String = baseUrl("file-upload")
+  val fileUploadFrontendUrl: String = baseUrl("file-upload-frontend")
+  val fileUploadCallbackUrl: String = loadConfig(s"microservice.services.file-upload.callbackUrl")
 
-  lazy val pdfServiceUrl: String = baseUrl("pdf-generator-service")
-
-  lazy val maxAttemptNumber: Int = 5
-  lazy val firstRetryMilliseconds: Int = 20
+  val maxAttemptNumber: Int = 5
+  val firstRetryMilliseconds: Int = 20
 
   object CTUTR {
-
-    lazy val businessArea : String = loadConfig(s"pdf.ctr.metadata.businessArea")
-    lazy val queue : String = loadConfig(s"pdf.ctr.metadata.queue")
-    lazy val formId : String = loadConfig(s"pdf.ctr.metadata.formId")
-    lazy val source : String = loadConfig(s"pdf.ctr.metadata.source")
-    lazy val target : String = loadConfig(s"pdf.ctr.metadata.target")
-    lazy val save : Boolean = loadBoolean(s"pdf.ctr.save")
-
+    val businessArea : String = loadConfig(s"pdf.ctr.metadata.businessArea")
+    val queue : String = loadConfig(s"pdf.ctr.metadata.queue")
+    val formId : String = loadConfig(s"pdf.ctr.metadata.formId")
+    val source : String = loadConfig(s"pdf.ctr.metadata.source")
+    val target : String = loadConfig(s"pdf.ctr.metadata.target")
+    val save : Boolean = loadBoolean(s"pdf.ctr.save")
   }
 
 }

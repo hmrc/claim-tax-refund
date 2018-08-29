@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package controllers
+package models
 
-import javax.inject.Singleton
-import play.api.mvc._
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{JsPath, Reads, Writes}
 
-import scala.concurrent.Future
+case class SubmissionResponse(id: String, filename : String)
 
-@Singleton()
-class MicroserviceHelloWorld extends BaseController {
+object SubmissionResponse {
 
-	def hello() = Action.async { implicit request =>
-		Future.successful(Ok("Hello world"))
-	}
+  implicit val writes : Writes[SubmissionResponse] = (
+    (JsPath \ "id").write[String] and
+      (JsPath \ "filename").write[String]
+    )(unlift(SubmissionResponse.unapply))
+
+  implicit val reads : Reads[SubmissionResponse] = (
+    (JsPath \ "id").read[String] and
+      (JsPath \ "filename").read[String]
+    )(SubmissionResponse.apply _)
 
 }
