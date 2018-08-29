@@ -16,22 +16,30 @@
 
 package services
 
-import com.google.inject.{Inject, Singleton}
+import config.SpecBase
 import connectors.FileUploadConnector
 import models.{Submission, SubmissionResponse}
-import org.joda.time.LocalDate
+import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.Future
 
-@Singleton
-class SubmissionService @Inject()(
-                                 val fileUploadConnector: FileUploadConnector
-                                 ){
+class SubmissionServiceSpec extends SpecBase with MockitoSugar {
 
-  protected def fileName(envelopeId: String, fileType: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-$fileType"
+  private val mockFileUploadConnector = mock[FileUploadConnector]
+  private val mockSubmission = Submission("pdf", "metadata", "xml")
+  private val envelopeId = "123"
+  private val fileName = "123-SubmissionCTR-20180829-pdf"
 
-  def submit(submission: Submission): Future[SubmissionResponse] = {
-    Future.successful(SubmissionResponse("123", fileName("123","pdf")))
+  object Service extends SubmissionService(mockFileUploadConnector)
+
+  "Submit" must {
+    "return a submission response" when {
+      "given valid inputs" in {
+        val result: Future[SubmissionResponse] = Service.submit(mockSubmission)
+
+        result mustBe SubmissionResponse(envelopeId, fileName)
+      }
+    }
   }
-}
 
+}
