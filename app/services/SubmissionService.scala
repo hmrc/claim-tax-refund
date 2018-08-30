@@ -20,18 +20,30 @@ import com.google.inject.{Inject, Singleton}
 import connectors.FileUploadConnector
 import models.{Submission, SubmissionResponse}
 import org.joda.time.LocalDate
+import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
 class SubmissionService @Inject()(
                                  val fileUploadConnector: FileUploadConnector
-                                 ){
+                                 )(implicit val hc: HeaderCarrier){
 
   protected def fileName(envelopeId: String, fileType: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-$fileType"
 
   def submit(submission: Submission): Future[SubmissionResponse] = {
-    Future.successful(SubmissionResponse("123", fileName("123","pdf")))
+
+    val result = for {
+      envelopeId: String <- fileUploadConnector.createEnvelope
+    } yield {
+
+      SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
+    }
+
+    result.recoverWith{
+      case e: Exception =>
+        Future.failed(new RuntimeException("Submit failed", e))
+    }
   }
 }
-

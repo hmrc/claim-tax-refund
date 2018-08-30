@@ -19,25 +19,54 @@ package services
 import config.SpecBase
 import connectors.FileUploadConnector
 import models.{Submission, SubmissionResponse}
+import org.joda.time.LocalDate
+import org.mockito.Mockito._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SubmissionServiceSpec extends SpecBase with MockitoSugar {
+
+class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures {
 
   private val mockFileUploadConnector = mock[FileUploadConnector]
   private val mockSubmission = Submission("pdf", "metadata", "xml")
   private val envelopeId = "123"
-  private val fileName = "123-SubmissionCTR-20180829-pdf"
+  private val fileName = s"123-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf"
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   object Service extends SubmissionService(mockFileUploadConnector)
 
   "Submit" must {
     "return a submission response" when {
       "given valid inputs" in {
+        when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
+
         val result: Future[SubmissionResponse] = Service.submit(mockSubmission)
 
-        result mustBe SubmissionResponse(envelopeId, fileName)
+        verify(mockFileUploadConnector, times(1)).createEnvelope
+
+        result.map {
+          submissionResponse =>
+            submissionResponse mustBe Future.successful(SubmissionResponse(envelopeId, fileName))
+        }
+
+      }
+    }
+
+    "return an error" when {
+      "submit fails" in {
+        when(mockFileUploadConnector.createEnvelope) thenReturn Future.failed(new RuntimeException)
+
+        val result: Future[SubmissionResponse] = Service.submit(mockSubmission)
+
+        whenReady(result.failed) {
+          result =>
+            result.getMessage mustBe "Submit failed"
+            result mustBe a[RuntimeException]
+        }
       }
     }
   }

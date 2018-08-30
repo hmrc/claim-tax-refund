@@ -65,7 +65,7 @@ class SubmissionControllerSpec extends SpecBase with MockitoSugar {
 
     "return 500" when {
       "invalid payload is submitted" in {
-        when(mockSubmissionService.submit(mockSubmission)).thenReturn(Future.failed(new Exception))
+        when(mockSubmissionService.submit(mockSubmission)) thenReturn Future.failed(new Exception)
         val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
 
         status(result) mustBe INTERNAL_SERVER_ERROR
