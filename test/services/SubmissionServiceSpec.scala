@@ -16,9 +16,10 @@
 
 package services
 
+import akka.actor.ActorSystem
 import config.SpecBase
 import connectors.FileUploadConnector
-import models.{Submission, SubmissionResponse}
+import models.{Envelope, File, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
@@ -36,6 +37,7 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
   private val envelopeId = "123"
   private val fileName = s"123-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf"
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val as: ActorSystem = ActorSystem()
 
   object Service extends SubmissionService(mockFileUploadConnector)
 
@@ -43,10 +45,10 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
     "return a submission response" when {
       "given valid inputs" in {
         when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
+        when(mockFileUploadConnector.envelopeSummary(envelopeId)) thenReturn
+          Future.successful(Envelope("", Some(""), "OPEN", Some(Seq(File("", "")))))
 
         val result: Future[SubmissionResponse] = Service.submit(mockSubmission)
-
-        verify(mockFileUploadConnector, times(1)).createEnvelope
 
         result.map {
           submissionResponse =>
