@@ -18,6 +18,7 @@ package controllers
 
 import com.google.inject.{Inject, Singleton}
 import models.Submission
+import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.Action
 import services.SubmissionService
@@ -36,9 +37,11 @@ class SubmissionController @Inject()(
     implicit request =>
       submissionService.submit(request.body).map {
         response =>
+          Logger.info(s"[SubmissionController][submit] processed submission $response")
           Ok(Json.toJson(response))
       } recoverWith {
         case e: Exception =>
+          Logger.error(s"[SubmissionController][submit][exception returned when processing submission] ${e.getMessage}")
           Future.successful(InternalServerError)
       }
   }

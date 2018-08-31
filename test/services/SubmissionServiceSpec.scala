@@ -22,6 +22,7 @@ import connectors.FileUploadConnector
 import models.{Envelope, File, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import org.mockito.Mockito._
+import org.mockito.Matchers.{eq => eqTo, _}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.http.HeaderCarrier
@@ -36,6 +37,9 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
   private val mockSubmission = Submission("pdf", "metadata", "xml")
   private val envelopeId = "123"
   private val fileName = s"123-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf"
+  private val envelope = Envelope("12345", None, "OPEN", None)
+  private val availableFiles =  Seq(File("one", "AVAILABLE"), File("two", "AVAILABLE"), File("three", "AVAILABLE"))
+  private val envelopeWithFiles = Envelope(envelopeId, None, "OPEN", Some(availableFiles))
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val as: ActorSystem = ActorSystem()
 
@@ -70,6 +74,27 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
             result mustBe a[RuntimeException]
         }
       }
+    }
+  }
+
+  "fileUploadCallback" must {
+    "return an envelopeId string" in {
+      when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
+      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelope)
+
+      val result: Future[String] = Service.fileUploadCallback(envelopeId)
+
+      whenReady(result) {
+        result =>
+          result mustBe envelopeId
+      }
+    }
+
+    "run closeEnvelope once if count of file status AVAILABLE == 3" in {
+      when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
+      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelopeWithFiles)
+
+      verify(mockFileUploadConnector, times(1)).closeEnvelope(eqTo(envelopeId))(any())
     }
   }
 

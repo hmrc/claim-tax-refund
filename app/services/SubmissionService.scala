@@ -16,10 +16,12 @@
 
 package services
 
+import akka.actor.ActorSystem
 import com.google.inject.{Inject, Singleton}
 import connectors.FileUploadConnector
 import models.{Submission, SubmissionResponse}
 import org.joda.time.LocalDate
+import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,8 +29,8 @@ import scala.concurrent.Future
 
 @Singleton
 class SubmissionService @Inject()(
-                                 val fileUploadConnector: FileUploadConnector
-                                 )(implicit val hc: HeaderCarrier){
+                                   val fileUploadConnector: FileUploadConnector
+                                 )(implicit val hc: HeaderCarrier, as: ActorSystem) {
 
   protected def fileName(envelopeId: String, fileType: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-$fileType"
 
@@ -41,9 +43,28 @@ class SubmissionService @Inject()(
       SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
     }
 
-    result.recoverWith{
+    result.recoverWith {
       case e: Exception =>
         Future.failed(new RuntimeException("Submit failed", e))
+    }
+  }
+
+  def fileUploadCallback(envelopeId: String): Future[String] = {
+    fileUploadConnector.envelopeSummary(envelopeId, 1, 5).flatMap {
+      envelope =>
+        envelope.status match {
+          case "OPEN" =>
+            envelope.files match {
+              case Some(files) if files.count(file => file.status == "AVAILABLE") == 3 =>
+                fileUploadConnector.closeEnvelope(envelopeId)
+              case _ =>
+                Logger.info("[SubmissionService][callback] incomplete wait for files")
+                Future.successful(envelopeId)
+            }
+          case _ =>
+            Logger.error(s"[SubmissionService][callback] envelope: $envelopeId not open instead status: ${envelope.status}")
+            Future.successful(envelopeId)
+        }
     }
   }
 }
