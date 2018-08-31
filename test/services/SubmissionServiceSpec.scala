@@ -21,8 +21,8 @@ import config.SpecBase
 import connectors.FileUploadConnector
 import models.{Envelope, File, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
+import org.mockito.Matchers.{eq => eqTo}
 import org.mockito.Mockito._
-import org.mockito.Matchers.{eq => eqTo, _}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import uk.gov.hmrc.http.HeaderCarrier
@@ -93,8 +93,9 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
     "run closeEnvelope once if count of file status AVAILABLE == 3" in {
       when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
       when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelopeWithFiles)
+      when(Service.fileUploadCallback(envelopeId)) thenReturn Future.successful(envelopeId)
 
-      verify(mockFileUploadConnector, times(1)).closeEnvelope(eqTo(envelopeId))(any())
+      verify(mockFileUploadConnector, times(1)).closeEnvelope(eqTo(envelopeId))(eqTo(hc))
     }
   }
 

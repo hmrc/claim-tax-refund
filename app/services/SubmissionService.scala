@@ -58,13 +58,15 @@ class SubmissionService @Inject()(
               case Some(files) if files.count(file => file.status == "AVAILABLE") == 3 =>
                 fileUploadConnector.closeEnvelope(envelopeId)
               case _ =>
-                Logger.info("[SubmissionService][callback] incomplete wait for files")
+                Logger.info("[SubmissionService][fileUploadCallback] incomplete, waiting for files")
                 Future.successful(envelopeId)
             }
           case _ =>
-            Logger.error(s"[SubmissionService][callback] envelope: $envelopeId not open instead status: ${envelope.status}")
+            Logger.error(s"[SubmissionService][fileUploadCallback] envelope: $envelopeId not open instead status: ${envelope.status}")
             Future.successful(envelopeId)
         }
     }
   }
+
+
 }
