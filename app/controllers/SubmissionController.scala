@@ -17,7 +17,7 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.Submission
+import models.{CallbackRequest, Submission}
 import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.Action
@@ -44,6 +44,18 @@ class SubmissionController @Inject()(
           Logger.error(s"[SubmissionController][submit][exception returned when processing submission] ${e.getMessage}")
           Future.successful(InternalServerError)
       }
+  }
+
+  def callback(): Action[CallbackRequest] = Action.async(parse.json[CallbackRequest]) {
+      implicit request =>
+        Logger.info(s"[SubmissionController][fileUploadCallback] processing callback ${request.body}")
+        request.body.status match {
+          case "AVAILABLE" =>
+            submissionService.fileUploadCallback(request.body.envelopeId).map(_ => Ok)
+          case _ =>
+            Logger.info(s"[SubmissionController][fileUploadCallback] callback for ${request.body.fileId} had status: ${request.body.status}")
+            Future.successful(Ok)
+        }
   }
 
 }
