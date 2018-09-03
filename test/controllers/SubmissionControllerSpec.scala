@@ -60,7 +60,6 @@ class SubmissionControllerSpec
   private val mockFileUploadConnector = mock[FileUploadConnector]
   private val submissionResponse = SubmissionResponse("12345", "12345-SubmissionCTR-20171023-iform.pdf")
   private val mockSubmission = Submission("pdf", "metadata", "xml")
-  private val envelope = Envelope("env123", None, "OPEN", None)
   private def envelope(envId: String, fileId: String, status: String): Envelope = Envelope(envId, Some(fileId), status, None)
   private lazy val callbackUrl: String = appConfig.fileUploadCallbackUrl
   implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -81,18 +80,11 @@ class SubmissionControllerSpec
     body = Json.toJson(mockSubmission)
   )
 
-  private val fakeCallbackRequest = FakeRequest(
+  private def fakeCallbackRequestAvailable(envId: String, fileId: String, status: String) = FakeRequest(
     method = "POST",
     uri = "",
     headers = FakeHeaders(Seq("Content-type" -> "application/json")),
-    body = Json.toJson(CallbackRequest("", "", ""))
-  )
-
-  private val fakeCallbackRequestAvailable = FakeRequest(
-    method = "POST",
-    uri = "",
-    headers = FakeHeaders(Seq("Content-type" -> "application/json")),
-    body = Json.toJson(CallbackRequest("env123", "file123", "AVAILABLE"))
+    body = Json.toJson(CallbackRequest(envId, fileId, status))
   )
 
   private val validData = Json.parse(
@@ -154,11 +146,11 @@ class SubmissionControllerSpec
                 )
             )
 
-            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful("env123")
-            when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelope)
-            when(mockSubmissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
+            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
 
-            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable)
+            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
 
             whenReady(callback) {
               result =>
@@ -168,7 +160,8 @@ class SubmissionControllerSpec
       }
     }
 
-    "call submissionService.fileUploadCallback" when {
+
+     "call submissionService.fileUploadCallback" when {
       "file status is AVAILABLE" in {
         forAll(response) {
           res =>
@@ -181,22 +174,22 @@ class SubmissionControllerSpec
                       Json.obj(
                         "envelopeId" -> res.envelopeId,
                         "fileId" -> res.fileId,
-                        "status" -> res.status
+                        "status" -> "AVAILABLE"
                       ).toString()
                     )
                 )
             )
 
             when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, "AVAILABLE"))
             when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
 
-            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable)
+            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, "AVAILABLE"))
 
             whenever(res.status == "AVAILABLE") {
               whenReady(callback) {
                 _ =>
-                  verify(mockSubmissionService, times(1)).fileUploadCallback(res.envelopeId)
+                  verify(mockSubmissionService, atLeastOnce()).fileUploadCallback(res.envelopeId)
               }
             }
         }
