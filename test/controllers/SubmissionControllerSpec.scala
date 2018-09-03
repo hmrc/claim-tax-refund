@@ -16,19 +16,22 @@
 
 package controllers
 
+import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
 import config.SpecBase
-import models.{CallbackRequest, Submission, SubmissionResponse}
+import connectors.FileUploadConnector
+import models._
 import org.mockito.Mockito._
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import play.api.Application
+import play.api.http.HttpEntity
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.mvc.Result
+import play.api.mvc.{Action, ResponseHeader, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
@@ -53,14 +56,16 @@ class SubmissionControllerSpec
       )
       .build()
 
-  private lazy val controllerInject: SubmissionController =
-    app.injector.instanceOf[SubmissionController]
-
   private val mockSubmissionService: SubmissionService = mock[SubmissionService]
+  private val mockFileUploadConnector = mock[FileUploadConnector]
   private val submissionResponse = SubmissionResponse("12345", "12345-SubmissionCTR-20171023-iform.pdf")
   private val mockSubmission = Submission("pdf", "metadata", "xml")
+  private val envelope = Envelope("env123", None, "OPEN", None)
+  private def envelope(envId: String, fileId: String, status: String): Envelope = Envelope(envId, Some(fileId), status, None)
   private lazy val callbackUrl: String = appConfig.fileUploadCallbackUrl
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val as: ActorSystem = ActorSystem()
+
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
 
   private val fileStatuses: Gen[String] = Gen.oneOf("AVAILABLE", "QUARANTINED", "CLEANED", "INFECTED", "ERROR")
@@ -81,6 +86,13 @@ class SubmissionControllerSpec
     uri = "",
     headers = FakeHeaders(Seq("Content-type" -> "application/json")),
     body = Json.toJson(CallbackRequest("", "", ""))
+  )
+
+  private val fakeCallbackRequestAvailable = FakeRequest(
+    method = "POST",
+    uri = "",
+    headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+    body = Json.toJson(CallbackRequest("env123", "file123", "AVAILABLE"))
   )
 
   private val validData = Json.parse(
@@ -139,14 +151,14 @@ class SubmissionControllerSpec
                         "status" -> res.status
                       ).toString()
                     )
-                  )
+                )
             )
 
-            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequest)
+            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful("env123")
+            when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelope)
+            when(mockSubmissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
 
-            whenever(res.status == "AVAILABLE") {
-              verify(mockSubmissionService, times(1)).fileUploadCallback(res.envelopeId)
-            }
+            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable)
 
             whenReady(callback) {
               result =>
@@ -154,10 +166,41 @@ class SubmissionControllerSpec
             }
         }
       }
+    }
 
-//      "closed callback response" in {
-//
-//      }
+    "call submissionService.fileUploadCallback" when {
+      "file status is AVAILABLE" in {
+        forAll(response) {
+          res =>
+            server.stubFor(
+              post(urlEqualTo(callbackUrl))
+                .willReturn(
+                  aResponse()
+                    .withStatus(200)
+                    .withBody(
+                      Json.obj(
+                        "envelopeId" -> res.envelopeId,
+                        "fileId" -> res.fileId,
+                        "status" -> res.status
+                      ).toString()
+                    )
+                )
+            )
+
+            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
+
+            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable)
+
+            whenever(res.status == "AVAILABLE") {
+              whenReady(callback) {
+                _ =>
+                  verify(mockSubmissionService, times(1)).fileUploadCallback(res.envelopeId)
+              }
+            }
+        }
+      }
     }
   }
 

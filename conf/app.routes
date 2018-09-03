@@ -1,5 +1,5 @@
 # microservice specific routes
 
-GET        /submit             @controllers.SubmissionController.submit()
+GET        /submit                         @controllers.SubmissionController.submit()
 
-POST       /callback           @controllers.SubmissionController.callback
+POST       /file-upload/callback           @controllers.SubmissionController.callback()

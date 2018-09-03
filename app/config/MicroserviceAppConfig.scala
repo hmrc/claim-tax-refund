@@ -33,7 +33,7 @@ class MicroserviceAppConfig @Inject()(override val runModeConfiguration: Configu
   val appName: String = runModeConfiguration.underlying.getString("appName")
   val fileUploadUrl: String = baseUrl("file-upload")
   val fileUploadFrontendUrl: String = baseUrl("file-upload-frontend")
-  val fileUploadCallbackUrl: String = loadConfig(s"microservice.services.file-upload.callbackUrl")
+  val fileUploadCallbackUrl: String = loadConfig("microservice.services.file-upload.callbackUrl")
 
   val maxAttemptNumber: Int = 5
   val firstRetryMilliseconds: Int = 20
