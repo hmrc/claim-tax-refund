@@ -27,11 +27,11 @@ import org.scalacheck.{Gen, Shrink}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.HttpEntity
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.mvc.{Action, ResponseHeader, Result}
+import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
@@ -44,6 +44,7 @@ class SubmissionControllerSpec
   extends SpecBase
     with MockitoSugar
     with WireMockHelper
+    with GuiceOneAppPerSuite
     with ScalaFutures
     with PropertyChecks
     with IntegrationPatience {
@@ -163,7 +164,7 @@ class SubmissionControllerSpec
 
      "call submissionService.fileUploadCallback" when {
       "file status is AVAILABLE" in {
-        forAll(response) {
+        forAll(response, minSuccessful(10), maxDiscardedFactor(20.0)) {
           res =>
             server.stubFor(
               post(urlEqualTo(callbackUrl))
@@ -174,23 +175,58 @@ class SubmissionControllerSpec
                       Json.obj(
                         "envelopeId" -> res.envelopeId,
                         "fileId" -> res.fileId,
-                        "status" -> "AVAILABLE"
+                        "status" -> res.status
                       ).toString()
                     )
                 )
             )
 
             when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, "AVAILABLE"))
+            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
             when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
 
-            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, "AVAILABLE"))
+            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
 
-            whenever(res.status == "AVAILABLE") {
-              whenReady(callback) {
-                _ =>
-                  verify(mockSubmissionService, atLeastOnce()).fileUploadCallback(res.envelopeId)
-              }
+            whenReady(callback) {
+              _ =>
+                whenever(res.status == "AVAILABLE") {
+                  verify(mockSubmissionService, times(1)).fileUploadCallback(res.envelopeId)
+                }
+            }
+        }
+      }
+    }
+
+    "not call submissionService.fileUploadCallback" when {
+      "file status is not AVAILABLE" in {
+        forAll(response, minSuccessful(10), maxDiscardedFactor(20.0)) {
+          res =>
+            server.stubFor(
+              post(urlEqualTo(callbackUrl))
+                .willReturn(
+                  aResponse()
+                    .withStatus(200)
+                    .withBody(
+                      Json.obj(
+                        "envelopeId" -> res.envelopeId,
+                        "fileId" -> res.fileId,
+                        "status" -> res.status
+                      ).toString()
+                    )
+                )
+            )
+
+            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
+
+            val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
+
+            whenReady(callback) {
+              _ =>
+                whenever(res.status != "AVAILABLE") {
+                  verify(mockSubmissionService, times(0)).fileUploadCallback(res.envelopeId)
+                }
             }
         }
       }
