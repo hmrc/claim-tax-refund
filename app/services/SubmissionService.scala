@@ -24,17 +24,18 @@ import org.joda.time.LocalDate
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
 class SubmissionService @Inject()(
                                    val fileUploadConnector: FileUploadConnector
-                                 )(implicit val hc: HeaderCarrier, as: ActorSystem) {
+                                 )(implicit as: ActorSystem) {
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def fileName(envelopeId: String, fileType: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-$fileType"
 
-  def submit(submission: Submission): Future[SubmissionResponse] = {
+  def submit(submission: Submission)(implicit hc: HeaderCarrier): Future[SubmissionResponse] = {
 
     val result = for {
       envelopeId: String <- fileUploadConnector.createEnvelope
@@ -49,7 +50,7 @@ class SubmissionService @Inject()(
     }
   }
 
-  def fileUploadCallback(envelopeId: String): Future[String] = {
+  def fileUploadCallback(envelopeId: String)(implicit hc: HeaderCarrier): Future[String] = {
     fileUploadConnector.envelopeSummary(envelopeId, 1, 5).flatMap {
       envelope =>
         envelope.status match {
