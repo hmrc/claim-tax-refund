@@ -19,6 +19,7 @@ package controllers
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
+import com.google.inject.Inject
 import config.SpecBase
 import connectors.FileUploadConnector
 import models._
@@ -40,7 +41,7 @@ import util.WireMockHelper
 
 import scala.concurrent.Future
 
-class SubmissionControllerSpec
+class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorSystem)
   extends SpecBase
     with MockitoSugar
     with WireMockHelper
@@ -63,8 +64,6 @@ class SubmissionControllerSpec
   private val mockSubmission = Submission("pdf", "metadata", "xml")
   private def envelope(envId: String, fileId: String, status: String): Envelope = Envelope(envId, Some(fileId), status, None)
   private lazy val callbackUrl: String = appConfig.fileUploadCallbackUrl
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val as: ActorSystem = ActorSystem()
 
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
 
