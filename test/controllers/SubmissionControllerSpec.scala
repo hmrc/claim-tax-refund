@@ -19,10 +19,10 @@ package controllers
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
-import com.google.inject.Inject
 import config.SpecBase
 import connectors.FileUploadConnector
 import models._
+import org.mockito.Matchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -36,12 +36,11 @@ import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
-import uk.gov.hmrc.http.HeaderCarrier
 import util.WireMockHelper
 
 import scala.concurrent.Future
 
-class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorSystem)
+class SubmissionControllerSpec
   extends SpecBase
     with MockitoSugar
     with WireMockHelper
@@ -64,6 +63,7 @@ class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorS
   private val mockSubmission = Submission("pdf", "metadata", "xml")
   private def envelope(envId: String, fileId: String, status: String): Envelope = Envelope(envId, Some(fileId), status, None)
   private lazy val callbackUrl: String = appConfig.fileUploadCallbackUrl
+  implicit val as: ActorSystem = ActorSystem()
 
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
 
@@ -108,7 +108,7 @@ class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorS
   "Submit" must {
     "return Ok with a envelopeId status" when {
       "valid payload is submitted" in {
-        when(mockSubmissionService.submit(mockSubmission)) thenReturn Future.successful(submissionResponse)
+        when(mockSubmissionService.submit(eqTo(mockSubmission))(any())) thenReturn Future.successful(submissionResponse)
         val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
 
         status(result) mustBe OK
@@ -118,7 +118,7 @@ class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorS
 
     "return 500" when {
       "invalid payload is submitted" in {
-        when(mockSubmissionService.submit(mockSubmission)) thenReturn Future.failed(new Exception)
+        when(mockSubmissionService.submit(eqTo(mockSubmission))(any())) thenReturn Future.failed(new Exception)
         val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
 
         status(result) mustBe INTERNAL_SERVER_ERROR
@@ -146,9 +146,9 @@ class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorS
                 )
             )
 
-            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
-            when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockSubmissionService.fileUploadCallback(eqTo(res.envelopeId))(any())) thenReturn Future.successful(res.envelopeId)
 
             val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
 
@@ -180,16 +180,16 @@ class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorS
                 )
             )
 
-            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
-            when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockSubmissionService.fileUploadCallback(eqTo(res.envelopeId))(any())) thenReturn Future.successful(res.envelopeId)
 
             val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
 
             whenReady(callback) {
               _ =>
                 whenever(res.status == "AVAILABLE") {
-                  verify(mockSubmissionService, times(1)).fileUploadCallback(res.envelopeId)
+                  verify(mockSubmissionService, times(1)).fileUploadCallback(eqTo(res.envelopeId))(any())
                 }
             }
         }
@@ -215,16 +215,16 @@ class SubmissionControllerSpec @Inject ()(implicit hc: HeaderCarrier, as: ActorS
                 )
             )
 
-            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(res.envelopeId, 1, 5)) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
-            when(mockSubmissionService.fileUploadCallback(res.envelopeId)) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
+            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockSubmissionService.fileUploadCallback(eqTo(res.envelopeId))(any())) thenReturn Future.successful(res.envelopeId)
 
             val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
 
             whenReady(callback) {
               _ =>
                 whenever(res.status != "AVAILABLE") {
-                  verify(mockSubmissionService, times(0)).fileUploadCallback(res.envelopeId)
+                  verify(mockSubmissionService, times(0)).fileUploadCallback(eqTo(res.envelopeId))(any())
                 }
             }
         }
