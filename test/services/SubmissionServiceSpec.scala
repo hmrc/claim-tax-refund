@@ -20,8 +20,10 @@ import akka.actor.ActorSystem
 import config.SpecBase
 import connectors.FileUploadConnector
 import models.{Envelope, File, Submission, SubmissionResponse}
+import org.mockito.Matchers.{eq => eqTo}
 import org.mockito.Mockito._
 import org.scalacheck.{Gen, Shrink}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
@@ -31,20 +33,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
-class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures with PropertyChecks {
+class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures with PropertyChecks with BeforeAndAfterEach {
 
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
 
+  override def beforeEach() {
+    reset(mockFileUploadConnector)
+  }
 
   private val mockFileUploadConnector = mock[FileUploadConnector]
   private val mockSubmission = Submission("pdf", "metadata", "xml")
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val as: ActorSystem = ActorSystem()
+  private val envelopeId = "1234"
+  private val envelopeOpenCorrectFiles = Envelope(envelopeId, None, "OPEN", Some(Seq(File("","AVAILABLE"),File("","AVAILABLE"),File("","AVAILABLE"))))
+  private val envelopeOpenIncorrectNumberOfFiles = Envelope(envelopeId, None, "OPEN", Some(Seq(File("","AVAILABLE"),File("","AVAILABLE"))))
+  private val envelopeOpenIncorrectFileSatus = Envelope(envelopeId, None, "OPEN", Some(Seq(File("","QUARANTINED"),File("","AVAILABLE"),File("","AVAILABLE"))))
 
   private val uuid: Gen[String] = Gen.uuid.map(_.toString)
-
   private val envelopeStatuses: Gen[String] = Gen.oneOf("OPEN", "CLOSED", "SEALED", "DELETED")
-
   private val fileStatuses: Gen[String] = Gen.oneOf("AVAILABLE", "QUARANTINED", "CLEANED", "INFECTED")
   private val file = for {
     name <- uuid
@@ -52,6 +59,7 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
   } yield {
     File(name, status)
   }
+
   private val files: Gen[Seq[File]] = Gen.listOf(file)
 
   private val envelope = for {
@@ -61,7 +69,6 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
   } yield {
     Envelope(envId, None, status, Some(files))
   }
-
 
   object Service extends SubmissionService(mockFileUploadConnector)
 
@@ -73,15 +80,15 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
 
           (envId, env) =>
 
-          when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envId)
-          when(mockFileUploadConnector.envelopeSummary(envId)) thenReturn Future.successful(env)
+            when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envId)
+            when(mockFileUploadConnector.envelopeSummary(envId)) thenReturn Future.successful(env)
 
-          val result: Future[SubmissionResponse] = Service.submit(mockSubmission)
+            val result: Future[SubmissionResponse] = Service.submit(mockSubmission)
 
-          result.map {
-            submissionResponse =>
-              submissionResponse mustBe Future.successful(SubmissionResponse(envId, env.files.get.head.name))
-          }
+            result.map {
+              submissionResponse =>
+                submissionResponse mustBe Future.successful(SubmissionResponse(envId, env.files.get.head.name))
+            }
 
         }
       }
@@ -102,28 +109,41 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
     }
   }
 
-/*
   "fileUploadCallback" must {
     "return an envelopeId string" in {
-      when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
-      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelope)
+      forAll(uuid, envelope) {
+        (envId, envelope) =>
+          when(mockFileUploadConnector.envelopeSummary(envId, 1, 5)) thenReturn Future.successful(envelope)
 
-      val result: Future[String] = Service.fileUploadCallback(envelopeId)
+          val result: Future[String] = Service.fileUploadCallback(envId)
 
-      whenReady(result) {
-        result =>
-          result mustBe envelopeId
+          whenReady(result) {
+            result =>
+              result mustBe envId
+          }
       }
     }
 
     "run closeEnvelope once if count of file status AVAILABLE == 3" in {
-      when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
-      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelopeWithFiles)
+      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelopeOpenCorrectFiles)
       when(Service.fileUploadCallback(envelopeId)) thenReturn Future.successful(envelopeId)
 
       verify(mockFileUploadConnector, times(1)).closeEnvelope(eqTo(envelopeId))(eqTo(hc))
     }
+
+    "closeEnvelope should not be called when file count is not equal to 3" in {
+      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelopeOpenIncorrectNumberOfFiles)
+      when(Service.fileUploadCallback(envelopeId)) thenReturn Future.successful(envelopeId)
+
+      verify(mockFileUploadConnector, times(0)).closeEnvelope(eqTo(envelopeId))(eqTo(hc))
+    }
+
+    "closeEnvelope should not be called when file status is not AVAILABLE" in {
+      when(mockFileUploadConnector.envelopeSummary(envelopeId, 1, 5)) thenReturn Future.successful(envelopeOpenIncorrectFileSatus)
+      when(Service.fileUploadCallback(envelopeId)) thenReturn Future.successful(envelopeId)
+
+      verify(mockFileUploadConnector, times(0)).closeEnvelope(eqTo(envelopeId))(eqTo(hc))
+    }
   }
-*/
 
 }
