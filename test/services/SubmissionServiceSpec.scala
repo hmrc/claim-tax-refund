@@ -31,7 +31,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
 class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures with PropertyChecks with BeforeAndAfterEach {
 
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny

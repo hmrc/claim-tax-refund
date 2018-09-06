@@ -18,6 +18,7 @@ package controllers
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, post, urlEqualTo}
 import config.SpecBase
 import connectors.FileUploadConnector
 import models._
@@ -28,28 +29,40 @@ import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
+import util.WireMockHelper
 
 import scala.concurrent.Future
 
 class SubmissionControllerSpec
   extends SpecBase
     with MockitoSugar
+    with WireMockHelper
     with GuiceOneAppPerSuite
     with ScalaFutures
     with PropertyChecks
     with IntegrationPatience {
 
+  override implicit lazy val app: Application =
+    new GuiceApplicationBuilder()
+      .configure(
+        "microservice.services.file-upload.port" -> server.port,
+        "microservice.services.file-upload-frontend.port" -> server.port
+      )
+      .build()
 
   private val mockSubmissionService: SubmissionService = mock[SubmissionService]
   private val mockFileUploadConnector = mock[FileUploadConnector]
   private val submissionResponse = SubmissionResponse("12345", "12345-SubmissionCTR-20171023-iform.pdf")
   private val mockSubmission = Submission("pdf", "metadata", "xml")
   private def envelope(envId: String, fileId: String, status: String): Envelope = Envelope(envId, Some(fileId), status, None)
+  private lazy val callbackUrl: String = appConfig.fileUploadCallbackUrl
   implicit val as: ActorSystem = ActorSystem()
 
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
@@ -118,6 +131,20 @@ class SubmissionControllerSpec
       "available callback response" in {
         forAll(response) {
           res =>
+            server.stubFor(
+              post(urlEqualTo(callbackUrl))
+                .willReturn(
+                  aResponse()
+                    .withStatus(200)
+                    .withBody(
+                      Json.obj(
+                        "envelopeId" -> res.envelopeId,
+                        "fileId" -> res.fileId,
+                        "status" -> res.status
+                      ).toString()
+                    )
+                )
+            )
 
             when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
             when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
@@ -134,10 +161,24 @@ class SubmissionControllerSpec
     }
 
 
-     "call submissionService.fileUploadCallback" when {
+    "call submissionService.fileUploadCallback" when {
       "file status is AVAILABLE" in {
         forAll(response, minSuccessful(10), maxDiscardedFactor(20.0)) {
           res =>
+            server.stubFor(
+              post(urlEqualTo(callbackUrl))
+                .willReturn(
+                  aResponse()
+                    .withStatus(200)
+                    .withBody(
+                      Json.obj(
+                        "envelopeId" -> res.envelopeId,
+                        "fileId" -> res.fileId,
+                        "status" -> res.status
+                      ).toString()
+                    )
+                )
+            )
 
             when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
             when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
@@ -159,6 +200,20 @@ class SubmissionControllerSpec
       "file status is not AVAILABLE" in {
         forAll(response, minSuccessful(10), maxDiscardedFactor(20.0)) {
           res =>
+            server.stubFor(
+              post(urlEqualTo(callbackUrl))
+                .willReturn(
+                  aResponse()
+                    .withStatus(200)
+                    .withBody(
+                      Json.obj(
+                        "envelopeId" -> res.envelopeId,
+                        "fileId" -> res.fileId,
+                        "status" -> res.status
+                      ).toString()
+                    )
+                )
+            )
 
             when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
             when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
