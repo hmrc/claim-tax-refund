@@ -18,7 +18,6 @@ package services
 
 import config.SpecBase
 import models.{Envelope, File, Submission, SubmissionResponse}
-import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 
