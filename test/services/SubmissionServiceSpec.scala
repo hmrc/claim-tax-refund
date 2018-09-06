@@ -16,35 +16,19 @@
 
 package services
 
-import akka.actor.ActorSystem
 import config.SpecBase
-import connectors.FileUploadConnector
 import models.{Envelope, File, Submission, SubmissionResponse}
+import org.mockito.Matchers
 import org.mockito.Mockito._
-import org.scalacheck.{Gen, Shrink}
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
-import uk.gov.hmrc.http.HeaderCarrier
+import org.scalacheck.Gen
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures with PropertyChecks with BeforeAndAfterEach {
+class SubmissionServiceSpec extends SpecBase {
 
-  implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
-
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-    reset(mockFileUploadConnector)
-  }
-
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val as: ActorSystem = ActorSystem()
-  private val mockFileUploadConnector = mock[FileUploadConnector]
   private val submissionService = new SubmissionService(mockFileUploadConnector)(as)
-  private val mockSubmission = Submission("pdf", "metadata", "xml")
+  private val fakeSubmission = Submission("pdf", "metadata", "xml")
 
   private val uuid: Gen[String] = Gen.uuid.map(_.toString)
   private val envelopeStatuses: Gen[String] = Gen.oneOf("OPEN", "CLOSED", "SEALED", "DELETED")
@@ -81,7 +65,7 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
             when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envId)
             when(mockFileUploadConnector.envelopeSummary(envId)) thenReturn Future.successful(env)
 
-            val result: Future[SubmissionResponse] = submissionService.submit(mockSubmission)
+            val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
 
             result.map {
               submissionResponse =>
@@ -96,7 +80,7 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
       "submit fails" in {
         when(mockFileUploadConnector.createEnvelope) thenReturn Future.failed(new RuntimeException)
 
-        val result: Future[SubmissionResponse] = submissionService.submit(mockSubmission)
+        val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
 
         whenReady(result.failed) {
           result =>
@@ -131,12 +115,14 @@ class SubmissionServiceSpec extends SpecBase with MockitoSugar with ScalaFutures
       }
     }
 
-    "run closeEnvelope once if count of file status AVAILABLE == 3" in {
-      when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithThreeFiles)
-      when(submissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
-
-      verify(mockFileUploadConnector, times(1)).closeEnvelope("env123")
-    }
+		"run closeEnvelope once if count of file status AVAILABLE == 3" in {
+			when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithThreeFiles)
+			when(mockFileUploadConnector.closeEnvelope(Matchers.any())(Matchers.any())) thenReturn Future.successful("env123")
+			whenReady(submissionService.fileUploadCallback("env123")) {
+				_ =>
+					verify(mockFileUploadConnector, times(1)).closeEnvelope(Matchers.any())(Matchers.any())
+			}
+		}
 
     "not run closeEnvelope once if count of file status AVAILABLE != 3" in {
       when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithTwoFiles)
