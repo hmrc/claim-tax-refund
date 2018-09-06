@@ -125,11 +125,11 @@ class SubmissionServiceSpec extends SpecBase {
 		}
 
     "not run closeEnvelope once if count of file status AVAILABLE != 3" in {
-      when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithTwoFiles)
-      when(submissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
+      when(mockFileUploadConnector.envelopeSummary("env456", 1, 5)) thenReturn Future.successful(envelopeWithTwoFiles)
+      when(submissionService.fileUploadCallback("env456")) thenReturn Future.successful("env456")
 
 
-      verify(mockFileUploadConnector, times(0)).closeEnvelope("env123")
+      verify(mockFileUploadConnector, times(0)).closeEnvelope("env456")
     }
   }
 }
