@@ -34,9 +34,11 @@ class SubmissionServiceSpec extends SpecBase {
   private val envelopeStatuses: Gen[String] = Gen.oneOf("OPEN", "CLOSED", "SEALED", "DELETED")
   private val fileStatuses: Gen[String] = Gen.oneOf("AVAILABLE", "QUARANTINED", "CLEANED", "INFECTED")
 
-  private val threeFiles = Seq[File](File("Blah1", "AVAILABLE"), File("Blah2", "AVAILABLE"), File("Blah3", "AVAILABLE"))
+  private val threeAvailableFiles = Seq[File](File("Blah1", "AVAILABLE"), File("Blah2", "AVAILABLE"), File("Blah3", "AVAILABLE"))
+  private val threeFiles = Seq[File](File("Blah1", "AVAILABLE"), File("Blah2", "QUARANTINED"), File("Blah3", "AVAILABLE"))
   private val twoFiles = Seq[File](File("Blah1", "AVAILABLE"), File("Blah2", "AVAILABLE"))
 
+  private val envelopeWithThreeAvailableFiles = Envelope("env123", None, "OPEN", Some(threeAvailableFiles))
   private val envelopeWithThreeFiles = Envelope("env123", None, "OPEN", Some(threeFiles))
   private val envelopeWithTwoFiles = Envelope("env456", None, "OPEN", Some(twoFiles))
 
@@ -115,21 +117,25 @@ class SubmissionServiceSpec extends SpecBase {
       }
     }
 
-		"run closeEnvelope once if count of file status AVAILABLE == 3" in {
-			when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithThreeFiles)
-			when(mockFileUploadConnector.closeEnvelope(Matchers.any())(Matchers.any())) thenReturn Future.successful("env123")
-			whenReady(submissionService.fileUploadCallback("env123")) {
-				_ =>
-					verify(mockFileUploadConnector, times(1)).closeEnvelope(Matchers.any())(Matchers.any())
-			}
-		}
+    "run closeEnvelope once if count of file status AVAILABLE == 3" in {
+      when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithThreeAvailableFiles)
+      when(submissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
+
+      verify(mockFileUploadConnector, times(1)).closeEnvelope("env123")
+    }
+
+    "not run closeEnvelope once if count of file status AVAILABLE < 3" in {
+      when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithTwoFiles)
+      when(submissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
+
+      verify(mockFileUploadConnector, times(0)).closeEnvelope("env123")
+    }
 
     "not run closeEnvelope once if count of file status AVAILABLE != 3" in {
-      when(mockFileUploadConnector.envelopeSummary("env456", 1, 5)) thenReturn Future.successful(envelopeWithTwoFiles)
-      when(submissionService.fileUploadCallback("env456")) thenReturn Future.successful("env456")
+      when(mockFileUploadConnector.envelopeSummary("env123", 1, 5)) thenReturn Future.successful(envelopeWithThreeFiles)
+      when(submissionService.fileUploadCallback("env123")) thenReturn Future.successful("env123")
 
-
-      verify(mockFileUploadConnector, times(0)).closeEnvelope("env456")
+      verify(mockFileUploadConnector, times(0)).closeEnvelope("env123")
     }
   }
 }
