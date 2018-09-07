@@ -22,6 +22,7 @@ import models.{Envelope, File, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
+import uk.gov.hmrc.http.HttpResponse
 
 import scala.concurrent.Future
 
@@ -37,10 +38,13 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
   private val submissionService = new SubmissionService(mockFileUploadConnector)(as)
   private val fakeSubmission = Submission("pdf", "metadata", "xml")
 
-  private def TestFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf"
+  protected def fileId(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
+  protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf.pdf"
+  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robot.xml"
+  protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
 
-  private val envId = "env123"
-  private val fileName = TestFileName(envId)
+  private val envelopeId = "env123"
+  private val byteArray: Array[Byte] = "test".getBytes
 
   private val threeAvailableFiles = Seq(File("Blah1", "AVAILABLE"), File("Blah2", "AVAILABLE"), File("Blah3", "AVAILABLE"))
   private val threeFiles = Seq(File("Blah1", "AVAILABLE"), File("Blah2", "QUARANTINED"), File("Blah3", "AVAILABLE"))
@@ -56,14 +60,17 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
   "Submit" must {
     "return a submission response" when {
       "given valid inputs" in {
-        when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envId)
-        when(mockFileUploadConnector.envelopeSummary(envId)) thenReturn Future.successful(envelopeWithThreeFiles)
+        val metadata = fakeSubmission.metadata.getBytes
+        when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
+        when(mockFileUploadConnector.envelopeSummary(envelopeId)) thenReturn Future.successful(envelopeWithThreeFiles)
+        when(mockFileUploadConnector.uploadFile(metadata, metadataFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))) thenReturn Future.successful(HttpResponse(200))
 
         val result = submissionService.submit(fakeSubmission)
 
         whenReady(result) {
           result =>
-            result mustBe SubmissionResponse(envId, fileName)
+            result mustBe SubmissionResponse(envelopeId, fileId(envelopeId))
+            verify(mockFileUploadConnector, times(1)).uploadFile(metadata, metadataFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))
         }
       }
     }
@@ -71,7 +78,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     "return an error" when {
       "submit fails" in {
         when(mockFileUploadConnector.createEnvelope) thenReturn Future.failed(new RuntimeException)
-        when(mockFileUploadConnector.envelopeSummary(envId)) thenReturn Future.successful(envelopeWithThreeFiles)
+        when(mockFileUploadConnector.envelopeSummary(envelopeId)) thenReturn Future.successful(envelopeWithThreeFiles)
 
         val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
 
@@ -83,8 +90,8 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
       }
 
       "given a closed envelope" in {
-        when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envId)
-        when(mockFileUploadConnector.envelopeSummary(envId)) thenReturn Future.successful(closedEnvelopeWithThreeFiles)
+        when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
+        when(mockFileUploadConnector.envelopeSummary(envelopeId)) thenReturn Future.successful(closedEnvelopeWithThreeFiles)
 
         val result = submissionService.submit(fakeSubmission)
 

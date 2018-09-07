@@ -33,24 +33,32 @@ class SubmissionService @Inject()(
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  protected def fileName(envelopeId: String, fileType: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-$fileType"
+  protected def fileId(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
+  protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf.pdf"
+  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robot.xml"
+  protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
 
   def submit(submission: Submission)(implicit hc: HeaderCarrier): Future[SubmissionResponse] = {
 
     val result = for {
       envelopeId: String <- fileUploadConnector.createEnvelope
       envelope: Envelope <- fileUploadConnector.envelopeSummary(envelopeId)
-
     } yield {
 
       envelope.status match {
         case "OPEN" =>
-          SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
+          fileUploadConnector.uploadFile(
+            submission.metadata.getBytes,
+            metadataFileName(envelopeId),
+            "application/xml",
+            envelopeId,
+            fileId(envelopeId)
+          )
         case _ =>
           Future.failed(throw new RuntimeException)
       }
 
-      SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
+      SubmissionResponse(envelopeId, fileId(envelopeId))
     }
 
 
