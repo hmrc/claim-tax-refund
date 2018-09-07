@@ -19,7 +19,7 @@ package services
 import akka.actor.ActorSystem
 import com.google.inject.{Inject, Singleton}
 import connectors.FileUploadConnector
-import models.{Submission, SubmissionResponse}
+import models.{Envelope, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
@@ -39,9 +39,20 @@ class SubmissionService @Inject()(
 
     val result = for {
       envelopeId: String <- fileUploadConnector.createEnvelope
+      envelope: Envelope <- fileUploadConnector.envelopeSummary(envelopeId)
+
     } yield {
+
+      envelope.status match {
+        case "OPEN" =>
+          SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
+        case _ =>
+          Future.failed(throw new RuntimeException)
+      }
+
       SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
     }
+
 
     result.recoverWith {
       case e: Exception =>
