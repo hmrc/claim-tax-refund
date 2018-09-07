@@ -37,7 +37,6 @@ class SubmissionServiceSpec extends SpecBase {
   private val threeFiles = Seq(File("Blah1", "AVAILABLE"), File("Blah2", "QUARANTINED"), File("Blah3", "AVAILABLE"))
   private val twoFiles = Seq(File("Blah1", "AVAILABLE"), File("Blah2", "AVAILABLE"))
 
-//  private val envelopeWithThreeAvailableFiles = Envelope("env123", None, "OPEN", Some(Seq(File("Blah1", "AVAILABLE"))))
   private val envelopeWithThreeAvailableFiles = Envelope("env123", None, "OPEN", Some(threeAvailableFiles))
   private val envelopeWithThreeFiles = Envelope("env123", None, "OPEN", Some(threeFiles))
   private val envelopeWithTwoFiles = Envelope("env456", None, "OPEN", Some(twoFiles))
