@@ -61,9 +61,12 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     "return a submission response" when {
       "given valid inputs" in {
         val metadata = fakeSubmission.metadata.getBytes
+        val xml = fakeSubmission.xml.getBytes
+
         when(mockFileUploadConnector.createEnvelope) thenReturn Future.successful(envelopeId)
         when(mockFileUploadConnector.envelopeSummary(envelopeId)) thenReturn Future.successful(envelopeWithThreeFiles)
         when(mockFileUploadConnector.uploadFile(metadata, metadataFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))) thenReturn Future.successful(HttpResponse(200))
+        when(mockFileUploadConnector.uploadFile(xml, xmlFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))) thenReturn Future.successful(HttpResponse(200))
 
         val result = submissionService.submit(fakeSubmission)
 
@@ -71,6 +74,8 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
           result =>
             result mustBe SubmissionResponse(envelopeId, fileId(envelopeId))
             verify(mockFileUploadConnector, times(1)).uploadFile(metadata, metadataFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))
+            verify(mockFileUploadConnector, times(1)).uploadFile(xml, xmlFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))
+
         }
       }
     }

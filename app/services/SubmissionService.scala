@@ -54,6 +54,14 @@ class SubmissionService @Inject()(
             envelopeId,
             fileId(envelopeId)
           )
+
+          fileUploadConnector.uploadFile(
+            submission.xml.getBytes,
+            xmlFileName(envelopeId),
+            "application/xml",
+            envelopeId,
+            fileId(envelopeId)
+          )
         case _ =>
           Future.failed(throw new RuntimeException)
       }
