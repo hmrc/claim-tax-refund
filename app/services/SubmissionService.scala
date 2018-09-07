@@ -40,7 +40,6 @@ class SubmissionService @Inject()(
     val result = for {
       envelopeId: String <- fileUploadConnector.createEnvelope
     } yield {
-
       SubmissionResponse(envelopeId, fileName(envelopeId, "pdf"))
     }
 

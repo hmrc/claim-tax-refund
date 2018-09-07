@@ -16,26 +16,24 @@
 
 package connectors
 
-import akka.actor.ActorSystem
 import com.github.tomakehurst.wiremock.client.WireMock._
 import config.SpecBase
 import models.{Envelope, File}
-import org.scalacheck.{Gen, Shrink}
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
+import org.scalacheck.Gen
+import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsArray, Json}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HttpResponse
 import util.WireMockHelper
 
-class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOneAppPerSuite with ScalaFutures with PropertyChecks with IntegrationPatience with MockitoSugar {
-  implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
-
-  private val as = ActorSystem()
+class FileUploadConnectorSpec
+  extends SpecBase
+    with WireMockHelper
+    with GuiceOneAppPerSuite
+    with IntegrationPatience {
 
   override implicit lazy val app: Application =
     new GuiceApplicationBuilder()
@@ -45,21 +43,17 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
       )
       .build()
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-
   private lazy val connector: FileUploadConnector =
     app.injector.instanceOf[FileUploadConnector]
 
   private val statuses: Gen[Int] =
     Gen.chooseNum(
-      200, 599,
-      400, 499, 500
+      400, 599,
+      400, 499, 500, 404, 429
     )
 
   private val uuid: Gen[String] = Gen.uuid.map(_.toString)
-
   private val envelopeStatuses: Gen[String] = Gen.oneOf("OPEN", "CLOSED", "SEALED", "DELETED")
-
   private val fileStatuses: Gen[String] = Gen.oneOf("AVAILABLE", "QUARANTINED", "CLEANED", "INFECTED")
 
   private val file: Gen[File] = for {
@@ -106,7 +100,6 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
           exception =>
             exception.getMessage mustBe "No envelope id returned by file upload service"
         }
-
       }
 
       "when status is not CREATED(201)" in {
@@ -121,15 +114,13 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
                 )
             )
 
-            whenever(status != 201) {
-              whenReady(connector.createEnvelope.failed) {
-                exception =>
-                  exception.getMessage mustBe s"failed to create envelope with status [$status]"
-                  exception mustBe a[RuntimeException]
-              }
+            whenReady(connector.createEnvelope.failed) {
+              exception =>
+                exception.getMessage mustBe s"failed to create envelope with status [$status]"
+                exception mustBe a[RuntimeException]
             }
-        }
 
+        }
       }
     }
   }
@@ -165,11 +156,11 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
                 )
             )
 
-            whenever(returnStatus != 200) {
-              whenReady(connector.uploadFile(new Array[Byte](1), "fileName.pdf", "application/xml", envId, fileId).failed) {
-                exception =>
-                  exception mustBe a[RuntimeException]
-              }
+
+            whenReady(connector.uploadFile(new Array[Byte](1), "fileName.pdf", "application/xml", envId, fileId).failed) {
+              exception =>
+                exception mustBe a[RuntimeException]
+
             }
         }
       }
@@ -218,8 +209,8 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
 
     "return exceptions" when {
       "no location header provided" in {
-        forAll(uuid, uuid) {
-          (envId, routingId) =>
+        forAll(uuid) {
+          envId =>
             server.stubFor(
               post(urlEqualTo("/file-routing/requests"))
                 .willReturn(
@@ -235,7 +226,7 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
         }
       }
 
-      "File upload status not CREATED(201) OR BAD_REQUEST(400)" in {
+      "File upload status not BAD_REQUEST(400)" in {
         forAll(statuses, uuid) {
           (returnStatus, envId) =>
             server.stubFor(
@@ -245,7 +236,7 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
                 )
             )
 
-            whenever(returnStatus != 201 && returnStatus != 400) {
+            whenever(returnStatus != 400) {
               whenReady(connector.closeEnvelope(envId).failed) {
                 exception =>
                   exception mustBe a[RuntimeException]
@@ -268,7 +259,6 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
               exception =>
                 exception.getMessage mustBe "failed with status 400 bad request"
             }
-
         }
       }
     }
@@ -377,7 +367,7 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
     }
 
 
-    "File upload status not OK(200) or NOT_FOUND(404)" must {
+    "File upload status not NOT_FOUND(404)" must {
       "Return Exception" in {
         forAll(statuses, uuid) {
           (returnStatus, envId) =>
@@ -388,7 +378,7 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
                 )
             )
 
-            whenever(returnStatus != Status.OK && returnStatus != Status.NOT_FOUND) {
+            whenever(returnStatus != Status.NOT_FOUND) {
               whenReady(connector.envelopeSummary(envId)(as, hc).failed) {
                 exception =>
                   exception mustBe a[RuntimeException]
@@ -419,7 +409,6 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
             result =>
               result mustBe Envelope(envId, None, envelopeStatus, Some(files))
           }
-
       }
     }
 
@@ -460,9 +449,9 @@ class FileUploadConnectorSpec extends SpecBase with WireMockHelper with GuiceOne
 
   "routingRequest" must {
     "contain envelopeId, application, destination" in {
-      forAll(uuid){
+      forAll(uuid) {
         envId =>
-        val result = connector.routingRequest(envId)
+          val result = connector.routingRequest(envId)
           (result \ "envelopeId").as[String] mustBe envId
           (result \ "application").as[String] mustBe "CTR"
           (result \ "destination").as[String] mustBe "DMS"
