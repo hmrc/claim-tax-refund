@@ -1,3 +1,5 @@
 # microservice specific routes
 
-GET        /hello-world             @uk.gov.hmrc.claimtaxrefund.controllers.MicroserviceHelloWorld.hello
+POST       /submit                         @controllers.SubmissionController.submit()
+
+POST       /file-upload/callback           @controllers.SubmissionController.callback()
