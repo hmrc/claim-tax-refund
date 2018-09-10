@@ -27,8 +27,8 @@ import scala.concurrent.Future
 
 @Singleton
 class PDFConnector @Inject()(
-                    appConfig: MicroserviceAppConfig,
-                    wsClient: WSClient) {
+                              appConfig: MicroserviceAppConfig,
+                              wsClient: WSClient) {
 
   private val pdfGeneratorUrl = appConfig.pdfGeneratorUrl
 

@@ -18,7 +18,7 @@ package services
 
 import akka.actor.ActorSystem
 import com.google.inject.{Inject, Singleton}
-import connectors.FileUploadConnector
+import connectors.{FileUploadConnector, PDFConnector}
 import models.{Envelope, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import play.api.Logger
@@ -28,7 +28,8 @@ import scala.concurrent.Future
 
 @Singleton
 class SubmissionService @Inject()(
-                                   val fileUploadConnector: FileUploadConnector
+                                   val fileUploadConnector: FileUploadConnector,
+                                   val pdfConnector: PDFConnector
                                  )(implicit as: ActorSystem) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -41,6 +42,7 @@ class SubmissionService @Inject()(
   def submit(submission: Submission)(implicit hc: HeaderCarrier): Future[SubmissionResponse] = {
 
     val result = for {
+      pdf: Array[Byte] <- pdfConnector.generatePDF(submission.pdf)
       envelopeId: String <- fileUploadConnector.createEnvelope
       envelope: Envelope <- fileUploadConnector.envelopeSummary(envelopeId)
     } yield {
@@ -62,6 +64,15 @@ class SubmissionService @Inject()(
             envelopeId,
             fileId(envelopeId)
           )
+
+          fileUploadConnector.uploadFile(
+            pdf,
+            pdfFileName(envelopeId),
+            "application/pdf",
+            envelopeId,
+            fileId(envelopeId)
+          )
+
         case _ =>
           Future.failed(throw new RuntimeException)
       }
