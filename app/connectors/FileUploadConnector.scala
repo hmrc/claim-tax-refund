@@ -66,7 +66,9 @@ class FileUploadConnector @Inject()(
 
       response.status match {
         case CREATED =>
-          envelopeId(response).map(Future.successful).getOrElse {
+          val res: Option[Future[String]] = envelopeId(response).map(Future.successful)
+          Logger.info(s"[FileUploadConnector][createEnvelope] Envelope created $res")
+          res.getOrElse {
             Future.failed(new RuntimeException("No envelope id returned by file upload service"))
           }
         case _ =>
