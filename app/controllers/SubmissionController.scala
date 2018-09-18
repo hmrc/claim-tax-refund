@@ -35,15 +35,18 @@ class SubmissionController @Inject()(
 
   def submit(): Action[Submission] = Action.async(parse.json[Submission]) {
     implicit request =>
-      submissionService.submit(request.body).map {
+      val result = submissionService.submit(request.body).map {
         response =>
           Logger.info(s"[SubmissionController][submit] processed submission $response")
           Ok(Json.toJson(response))
-      } recoverWith {
-        case e: Exception =>
-          Logger.error(s"[SubmissionController][submit][exception returned when processing submission] ${e.getMessage}")
-          Future.successful(InternalServerError)
       }
+
+      result.onFailure {
+        case e =>
+          Logger.error(s"[SubmissionController][submit][exception returned when processing submission]", e)
+      }
+
+      result
   }
 
   def callback(): Action[CallbackRequest] = Action.async(parse.json[CallbackRequest]) {
