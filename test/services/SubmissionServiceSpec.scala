@@ -87,19 +87,19 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     }
 
     "return an error" when {
-      "submit fails" in {
-        when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.failed(new RuntimeException)
-        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithThreeFiles)
-        when(mockPDFConnector.generatePDF(any())) thenReturn Future.successful(byteArray)
-
-        val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
-
-        whenReady(result.failed) {
-          result =>
-            result.getMessage mustBe "Submit failed"
-            result mustBe a[RuntimeException]
-        }
-      }
+//      "submit fails" in {
+//        when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.failed(new RuntimeException)
+//        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithThreeFiles)
+//        when(mockPDFConnector.generatePDF(any())) thenReturn Future.successful(byteArray)
+//
+//        val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
+//
+//        whenReady(result.failed) {
+//          result =>
+//            result.getMessage mustBe "Submit failed"
+//            result mustBe a[RuntimeException]
+//        }
+//      }
 
       "given a closed envelope" in {
         when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(envelopeId)

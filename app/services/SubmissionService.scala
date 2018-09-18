@@ -21,7 +21,7 @@ import com.google.inject.{Inject, Singleton}
 import connectors.{FileUploadConnector, PDFConnector}
 import models.{Envelope, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
-import play.api.Logger
+import play.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -81,10 +81,12 @@ class SubmissionService @Inject()(
     }
 
 
-    result.recoverWith {
-      case e: Exception =>
-        Future.failed(new RuntimeException("Submit failed", e))
+    result.onFailure {
+      case e =>
+        Logger.error("[SubmissionService][submit] submit failed: ", e)
     }
+
+    result
   }
 
   def fileUploadCallback(envelopeId: String)(implicit hc: HeaderCarrier): Future[String] = {
