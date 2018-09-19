@@ -41,7 +41,8 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
   private val submissionService = new SubmissionService(mockFileUploadConnector, mockPDFConnector)(as)
   private val fakeSubmission = Submission("pdf", "metadata", "xml")
 
-  protected def fileId(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
+  protected def removeExtension(fileName: String): String = fileName.split("\\.").head
+  protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
   protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf.pdf"
   protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robot.xml"
   protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
@@ -78,10 +79,10 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
 
         whenReady(result) {
           result =>
-            result mustBe SubmissionResponse(envelopeId, fileId(envelopeId))
-            verify(mockFileUploadConnector, times(1)).uploadFile(metadata, metadataFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))
-            verify(mockFileUploadConnector, times(1)).uploadFile(xml, xmlFileName(envelopeId), "application/xml", envelopeId, fileId(envelopeId))
-            verify(mockFileUploadConnector, times(1)).uploadFile(pdf, pdfFileName(envelopeId), "application/pdf", envelopeId, fileId(envelopeId))
+            result mustBe SubmissionResponse(envelopeId, responseReference(envelopeId))
+            verify(mockFileUploadConnector, times(1)).uploadFile(metadata, metadataFileName(envelopeId), "application/xml", envelopeId, removeExtension(metadataFileName(envelopeId)))
+            verify(mockFileUploadConnector, times(1)).uploadFile(xml, xmlFileName(envelopeId), "application/xml", envelopeId, removeExtension(xmlFileName(envelopeId)))
+            verify(mockFileUploadConnector, times(1)).uploadFile(pdf, pdfFileName(envelopeId), "application/pdf", envelopeId, removeExtension(pdfFileName(envelopeId)))
         }
       }
     }
