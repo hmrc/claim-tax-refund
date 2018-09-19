@@ -34,7 +34,8 @@ class SubmissionService @Inject()(
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  protected def fileId(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
+  protected def removeExtension(fileName: String): String = fileName.split("\\.").head
+  protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
   protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-pdf.pdf"
   protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robot.xml"
   protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
@@ -50,34 +51,34 @@ class SubmissionService @Inject()(
       envelope.status match {
         case "OPEN" =>
           fileUploadConnector.uploadFile(
-            submission.metadata.getBytes,
-            metadataFileName(envelopeId),
-            "application/xml",
-            envelopeId,
-            fileId(envelopeId)
+            byteArray = submission.metadata.getBytes,
+            fileName = metadataFileName(envelopeId),
+            contentType = "application/xml",
+            envelopeId = envelopeId,
+            fileId = removeExtension(metadataFileName(envelopeId))
           )
 
           fileUploadConnector.uploadFile(
-            submission.xml.getBytes,
-            xmlFileName(envelopeId),
-            "application/xml",
-            envelopeId,
-            fileId(envelopeId)
+            byteArray = submission.xml.getBytes,
+            fileName = xmlFileName(envelopeId),
+            contentType = "application/xml",
+            envelopeId = envelopeId,
+            fileId = removeExtension(xmlFileName(envelopeId))
           )
 
           fileUploadConnector.uploadFile(
-            pdf,
-            pdfFileName(envelopeId),
-            "application/pdf",
-            envelopeId,
-            fileId(envelopeId)
+            byteArray = pdf,
+            fileName = pdfFileName(envelopeId),
+            contentType = "application/pdf",
+            envelopeId = envelopeId,
+            fileId = removeExtension(pdfFileName(envelopeId))
           )
 
         case _ =>
           Future.failed(throw new RuntimeException)
       }
 
-      SubmissionResponse(envelopeId, fileId(envelopeId))
+      SubmissionResponse(envelopeId, responseReference(envelopeId))
     }
 
 

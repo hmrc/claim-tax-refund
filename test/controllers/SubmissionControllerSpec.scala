@@ -100,14 +100,17 @@ class SubmissionControllerSpec
       }
     }
 
-//    "return 500" when {
-//      "invalid payload is submitted" in {
-//        when(mockSubmissionService.submit(eqTo(mockSubmission))(any())) thenReturn Future.failed(new Exception)
-//        val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
-//
-//        status(result) mustBe INTERNAL_SERVER_ERROR
-//      }
-//    }
+    "return 500" when {
+      "invalid payload is submitted" in {
+        when(mockSubmissionService.submit(eqTo(mockSubmission))(any())) thenReturn Future.failed(new Exception)
+        val result: Future[Result] = Helpers.call(controller().submit(), fakeRequest)
+
+        whenReady(result.failed) {
+          result =>
+            result mustBe a[Exception]
+        }
+      }
+    }
   }
 
   "Callback" must {
