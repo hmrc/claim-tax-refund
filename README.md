@@ -1,9 +1,30 @@
-# claim-tax-refund
+# claim tax refund backend
 
-[![Build Status](https://travis-ci.org/hmrc/claim-tax-refund.svg)](https://travis-ci.org/hmrc/claim-tax-refund) [ ![Download](https://api.bintray.com/packages/hmrc/releases/claim-tax-refund/images/download.svg) ](https://bintray.com/hmrc/releases/claim-tax-refund/_latestVersion)
+CTR backend microservice.
 
-This is a placeholder README.md for a new repository
+### Dependencies
 
-### License
+|Service|Link|
+|-|-|
+|File upload frontend|https://github.com/hmrc/file-upload-frontend|
+|File upload|https://github.com/hmrc/file-upload|
+|Pdf generator|https://github.com/hmrc/pdf-generator-service|
 
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
+## Running the service
+
+Service Manager: CTR_ALL 
+
+|Repositories|Link|
+|------------|----|
+|Frontend|https://github.com/hmrc/claim-tax-refund-frontend|
+|Stub|https://github.com/hmrc/claim-tax-refund-stubs|
+|Journey tests|https://github.com/hmrc/claim-tax-refund-journey-tests|
+
+Routes
+-------
+Port: 9201
+
+| *Url* | *Description* |
+|-------|---------------|
+| /submit | The frontend submits to this endpoint |
+| /file-upload/callback | Callback endpoint for file upload |
