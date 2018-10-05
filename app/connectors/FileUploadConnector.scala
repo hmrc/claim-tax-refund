@@ -35,7 +35,7 @@ import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import utils.HttpResponseHelper
-
+import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -193,8 +193,6 @@ class FileUploadConnector @Inject()(
         path.split("/").reverse.head
     )
   }
-
-  import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 
   def formatMessage(ld: LoggingDetails, method: String, uri: String, startAge: Long, message: String): String = {
     val requestId    = ld.requestId.getOrElse("")
