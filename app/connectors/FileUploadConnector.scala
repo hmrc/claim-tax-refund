@@ -26,6 +26,7 @@ import com.kenshoo.play.metrics.Metrics
 import config.MicroserviceAppConfig
 import models.Envelope
 import play.Logger
+import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
@@ -49,6 +50,8 @@ class FileUploadConnector @Inject()(
                                    )(implicit as: ActorSystem)
   extends HttpResponseHelper
     with ConnectionTracing {
+
+  private val connectionLogger = Logger(this.getClass)
 
   private val callbackUrl: String = appConfig.fileUploadCallbackUrl
   private val fileUploadUrl: String = appConfig.fileUploadUrl
