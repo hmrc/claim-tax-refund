@@ -16,6 +16,7 @@
 
 package connectors
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.pattern.Patterns.after
 import akka.stream.scaladsl.Source
@@ -26,9 +27,11 @@ import config.MicroserviceAppConfig
 import models.Envelope
 import play.Logger
 import play.api.http.Status._
-import play.api.libs.json.{JsResult, JsSuccess, JsValue, Json}
+import play.api.libs.json._
 import play.api.libs.ws.WSClient
+import play.api.mvc.MultipartFormData
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
+import uk.gov.hmrc.http.logging.{ConnectionTracing, LoggingDetails}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import utils.HttpResponseHelper
@@ -43,7 +46,9 @@ class FileUploadConnector @Inject()(
                                      val httpClient: HttpClient,
                                      val wsClient: WSClient,
                                      val metrics: Metrics
-                                   )(implicit as: ActorSystem) extends HttpResponseHelper {
+                                   )(implicit as: ActorSystem)
+  extends HttpResponseHelper
+    with ConnectionTracing {
 
   private val callbackUrl: String = appConfig.fileUploadCallbackUrl
   private val fileUploadUrl: String = appConfig.fileUploadUrl
@@ -86,23 +91,30 @@ class FileUploadConnector @Inject()(
 
   def uploadFile(byteArray: Array[Byte], fileName: String, contentType: String, envelopeId: String, fileId: String)
                 (implicit hc: HeaderCarrier): Future[HttpResponse] = {
+    val url: String =
+      s"$fileUploadFrontEndUrl/file-upload/upload/envelopes/$envelopeId/files/$fileId"
 
-    val multipartFormData = Source(FilePart("attachment", fileName, Some(contentType),
-      Source(ByteString(byteArray) :: Nil)) :: DataPart("", "") :: Nil)
+    val multipartFormData: Source[MultipartFormData.Part[Source[ByteString, NotUsed]], NotUsed] =
+      Source(FilePart("attachment", fileName, Some(contentType), Source(ByteString(byteArray) :: Nil)) :: DataPart("", "") :: Nil)
 
-    val result = wsClient.url(s"$fileUploadFrontEndUrl/file-upload/upload/envelopes/$envelopeId/files/$fileId")
-      .withHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*).post(multipartFormData).flatMap { response =>
+    val result: Future[AnyRef with HttpResponse] =
+      wsClient.url(url)
+        .withHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*)
+        .post(multipartFormData).flatMap { response =>
 
       response.status match {
         case OK =>
+          connectionLogger.debug(formatMessage(hc, "POST", url, hc.age, "ok"))
           Future.successful(HttpResponse(response.status))
         case _ =>
+          connectionLogger.debug(formatMessage(hc, "POST", url, hc.age, s"${response.status}"))
           Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
       }
     }
 
     result.onFailure {
       case e =>
+        connectionLogger.debug(formatMessage(hc, "POST", url, hc.age, s"${e.getMessage}"))
         Logger.error("[FileUploadConnector][uploadFile] - call to upload file failed", e)
     }
 
