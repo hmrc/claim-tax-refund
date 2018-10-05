@@ -25,14 +25,13 @@ import com.google.inject.{Inject, Singleton}
 import com.kenshoo.play.metrics.Metrics
 import config.MicroserviceAppConfig
 import models.Envelope
-import play.Logger
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.mvc.MultipartFormData
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
-import uk.gov.hmrc.http.logging.{ConnectionTracing, LoggingDetails}
+import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import utils.HttpResponseHelper
@@ -48,8 +47,7 @@ class FileUploadConnector @Inject()(
                                      val wsClient: WSClient,
                                      val metrics: Metrics
                                    )(implicit as: ActorSystem)
-  extends HttpResponseHelper
-    with ConnectionTracing {
+  extends HttpResponseHelper {
 
   private val connectionLogger = Logger(this.getClass)
 
@@ -194,5 +192,14 @@ class FileUploadConnector @Inject()(
       path =>
         path.split("/").reverse.head
     )
+  }
+
+  import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
+
+  def formatMessage(ld: LoggingDetails, method: String, uri: String, startAge: Long, message: String): String = {
+    val requestId    = ld.requestId.getOrElse("")
+    val requestChain = ld.requestChain
+    val durationNs   = ld.age - startAge
+    s"$requestId:$method:$startAge:${formatNs(startAge)}:$durationNs:${formatNs(durationNs)}:${requestChain.value}:$uri:$message"
   }
 }
