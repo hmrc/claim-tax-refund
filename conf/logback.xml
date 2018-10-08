@@ -49,7 +49,7 @@
 
     <logger name="application" level="WARN"/>
 
-    <logger name="connector" level="DEBUG">
+    <logger name="connectors" level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </logger>
 
