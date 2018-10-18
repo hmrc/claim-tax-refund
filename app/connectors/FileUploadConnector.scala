@@ -105,18 +105,17 @@ class FileUploadConnector @Inject()(
 
       response.status match {
         case OK =>
-          connectionLogger.debug(formatMessage(hc, "POST", url, hc.age, "ok"))
+          connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
           Future.successful(HttpResponse(response.status))
         case _ =>
-          connectionLogger.debug(formatMessage(hc, "POST", url, hc.age, s"${response.status}"))
+          connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${response.status}"))
           Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
       }
     }
 
     result.onFailure {
       case e =>
-        connectionLogger.debug(formatMessage(hc, "POST", url, hc.age, s"${e.getMessage}"))
-        Logger.error("[FileUploadConnector][uploadFile] - call to upload file failed", e)
+        connectionLogger.error(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${e.getMessage}"))
     }
 
     result
