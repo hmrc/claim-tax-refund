@@ -5,6 +5,7 @@ import play.sbt.routes.RoutesKeys.routesGenerator
 import sbt.Keys._
 import sbt.Tests.{Group, SubProcess}
 import sbt._
+import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings._
 import uk.gov.hmrc.{SbtAutoBuildPlugin, _}
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
@@ -52,6 +53,15 @@ lazy val microservice = Project(appName, file("."))
     retrieveManaged := true,
     evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     routesGenerator := StaticRoutesGenerator
+  )
+  .settings(
+    ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;.*filters.*;.*handlers.*;.*components.*;.*repositories.*;" +
+      ".*BuildInfo.*;.*javascript.*;.*FrontendAuditConnector.*;.*Routes.*;.*GuiceInjector;.*DataCacheConnector;" +
+      ".*ControllerConfiguration;.*LanguageSwitchController",
+    ScoverageKeys.coverageMinimum := 80,
+    ScoverageKeys.coverageFailOnMinimum := true,
+    ScoverageKeys.coverageHighlighting := true,
+    parallelExecution in Test := false
   )
   .settings(resolvers ++= Seq(
     Resolver.bintrayRepo("hmrc", "releases"),
