@@ -28,24 +28,12 @@ class MicroserviceAppConfig @Inject()(override val runModeConfiguration: Configu
 
   private def loadConfig(key: String): String = runModeConfiguration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
 
-  private def loadBoolean(key: String): Boolean = runModeConfiguration.getBoolean(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
-
   val appName: String = runModeConfiguration.underlying.getString("appName")
   val fileUploadUrl: String = baseUrl("file-upload")
   val fileUploadFrontendUrl: String = baseUrl("file-upload-frontend")
   val fileUploadCallbackUrl: String = loadConfig("microservice.services.file-upload.callbackUrl")
-  val pdfGeneratorUrl =  baseUrl("pdf-generator-service")
+  val pdfGeneratorUrl: String =  baseUrl("pdf-generator-service")
 
   val maxAttemptNumber: Int = 5
   val firstRetryMilliseconds: Int = 20
-
-  object CTUTR {
-    val businessArea : String = loadConfig(s"pdf.ctr.metadata.businessArea")
-    val queue : String = loadConfig(s"pdf.ctr.metadata.queue")
-    val formId : String = loadConfig(s"pdf.ctr.metadata.formId")
-    val source : String = loadConfig(s"pdf.ctr.metadata.source")
-    val target : String = loadConfig(s"pdf.ctr.metadata.target")
-    val save : Boolean = loadBoolean(s"pdf.ctr.save")
-  }
-
 }
