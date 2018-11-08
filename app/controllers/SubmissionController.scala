@@ -17,21 +17,24 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{CallbackRequest, Submission}
+import connectors.CasConnector
+import models.{CallbackRequest, Submission, SubmissionArchiveRequest, SubmissionArchiveResponse}
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Action
 import services.SubmissionService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
 class SubmissionController @Inject()(
-                                      val submissionService: SubmissionService
-                                    ) extends BaseController {
+                                      submissionService: SubmissionService,
+                                      casConnector: CasConnector
+                                    )(implicit hc: HeaderCarrier, ec: ExecutionContext) extends BaseController {
 
   def submit(): Action[Submission] = Action.async(parse.json[Submission]) {
     implicit request =>
@@ -59,6 +62,24 @@ class SubmissionController @Inject()(
           Logger.warn(s"[SubmissionController][fileUploadCallback] callback for ${request.body.fileId} had status: ${request.body.status}")
           Future.successful(Ok)
       }
+  }
+
+  def archiveSubmission(): Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      val data = request.body.asInstanceOf[SubmissionArchiveRequest]
+
+      val submissionArchiveResponse = casConnector.archiveSubmission(data.submissionRef, data).map {
+        response =>
+          Logger.info(s"[SubmissionController][archiveSubmission] response received: $response")
+          Ok(Json.toJson(response))
+      }
+
+      submissionArchiveResponse.onFailure {
+        case e =>
+          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission reference: ${data.submissionRef}]", e)
+      }
+
+      submissionArchiveResponse
   }
 
 }
