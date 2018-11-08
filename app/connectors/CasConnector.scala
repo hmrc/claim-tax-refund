@@ -16,22 +16,28 @@
 
 package connectors
 
+import javax.inject.Singleton
+import com.google.inject.{ImplementedBy, Inject}
 import config.MicroserviceAppConfig
-import javax.inject.Inject
 import models.{SubmissionArchiveRequest, SubmissionArchiveResponse}
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
-class CasConnector @Inject()(appConfig: MicroserviceAppConfig, http: HttpClient)(implicit hc: HeaderCarrier, ec: ExecutionContext) {
+@Singleton
+class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: HttpClient) extends CasConnector {
 
-  def archiveSubmission(submissionRef: String, data: SubmissionArchiveRequest): Future[SubmissionArchiveResponse] = {
+  def archiveSubmission(submissionRef: String, data: SubmissionArchiveRequest)(implicit hc: HeaderCarrier, ec:ExecutionContext): Future[SubmissionArchiveResponse] = {
     Logger.debug(s"Sending submission $submissionRef to CAS via DMS API")
 
     val url: String = s"${appConfig.dmsApiUrl}/digital-form/archive/$submissionRef"
     http.POST[SubmissionArchiveRequest, SubmissionArchiveResponse](url, data)
   }
+}
+
+@ImplementedBy(classOf[CasConnectorImpl])
+trait CasConnector {
+  def archiveSubmission(submissionRef: String, data: SubmissionArchiveRequest)(implicit hc: HeaderCarrier, ec:ExecutionContext): Future[SubmissionArchiveResponse]
 }

@@ -18,23 +18,22 @@ package controllers
 
 import com.google.inject.{Inject, Singleton}
 import connectors.CasConnector
-import models.{CallbackRequest, Submission, SubmissionArchiveRequest, SubmissionArchiveResponse}
+import models.{CallbackRequest, Submission, SubmissionArchiveRequest}
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.Action
+import play.api.mvc.{Action, Result}
 import services.SubmissionService
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 
 @Singleton
 class SubmissionController @Inject()(
                                       submissionService: SubmissionService,
                                       casConnector: CasConnector
-                                    )(implicit hc: HeaderCarrier, ec: ExecutionContext) extends BaseController {
+                                    ) extends BaseController {
 
   def submit(): Action[Submission] = Action.async(parse.json[Submission]) {
     implicit request =>
@@ -66,20 +65,23 @@ class SubmissionController @Inject()(
 
   def archiveSubmission(): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      val data = request.body.asInstanceOf[SubmissionArchiveRequest]
+      val data = request.body.validate[SubmissionArchiveRequest]
 
-      val submissionArchiveResponse = casConnector.archiveSubmission(data.submissionRef, data).map {
-        response =>
-          Logger.info(s"[SubmissionController][archiveSubmission] response received: $response")
-          Ok(Json.toJson(response))
-      }
+      val response: Future[Result] = data.map {
+        submission =>
+          casConnector.archiveSubmission(submission.submissionRef, submission).map {
+          response =>
+            Logger.info(s"[SubmissionController][archiveSubmission] response received: $response")
+            Ok(Json.toJson(response))
+        }
+      }.getOrElse(Future.failed(new RuntimeException))
 
-      submissionArchiveResponse.onFailure {
+      response.onFailure {
         case e =>
-          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission reference: ${data.submissionRef}]", e)
+          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission: $data]", e)
       }
 
-      submissionArchiveResponse
+      response
   }
 
 }
