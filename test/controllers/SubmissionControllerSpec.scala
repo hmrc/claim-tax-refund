@@ -18,29 +18,42 @@ package controllers
 
 import akka.stream.Materializer
 import config.SpecBase
-import connectors.FileUploadConnector
+import connectors.{CasConnector, FileUploadConnector}
 import models._
 import org.mockito.Matchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
+import util.WireMockHelper
 
 import scala.concurrent.Future
 
 class SubmissionControllerSpec
   extends SpecBase
     with IntegrationPatience
-    with BeforeAndAfterEach {
+    with WireMockHelper
+		with GuiceOneAppPerSuite {
 
   private val mockFileUploadConnector = mock[FileUploadConnector]
+  private val mockCasConnector = mock[CasConnector]
 
-  override def beforeEach(): Unit = {
+	override implicit lazy val app: Application =
+		new GuiceApplicationBuilder()
+			.configure(
+				conf = "microservice.services.dmsapi.port" -> server.port
+			)
+			.build()
+
+
+	override def beforeEach(): Unit = {
     super.beforeEach()
     reset(mockFileUploadConnector)
   }
@@ -63,6 +76,13 @@ class SubmissionControllerSpec
     headers = FakeHeaders(Seq("Content-type" -> "application/json")),
     body = Json.toJson(mockSubmission)
   )
+
+	def fakeCasRequest(data: SubmissionArchiveRequest) = FakeRequest(
+		method = "POST",
+		uri = "",
+		headers = FakeHeaders(Seq("Content-type" -> "application/json")),
+		body = Json.toJson(data)
+	)
 
   private def fakeCallbackRequestAvailable(envId: String, fileId: String, status: String) = FakeRequest(
     method = "POST",
@@ -87,7 +107,7 @@ class SubmissionControllerSpec
     CallbackRequest(envelopeId, fileId, status, None)
   }
 
-  def controller() = new SubmissionController(mockSubmissionService)
+  def controller() = new SubmissionController(mockSubmissionService, mockCasConnector)
 
   "Submit" must {
     "return Ok with a envelopeId status" when {
@@ -169,6 +189,33 @@ class SubmissionControllerSpec
                   verify(mockSubmissionService, times(0)).fileUploadCallback(eqTo(res.envelopeId))(any())
                 }
             }
+        }
+      }
+    }
+  }
+
+	"ArchiveSubmission" must {
+    "return a 200 response status" when {
+      "a valid SubmissionArchiveRequest is sent and a valid SubmissionArchiveResponse and cas key is returned" in {
+        when(mockCasConnector.archiveSubmission(any(), any())(any(), any())) thenReturn Future.successful(SubmissionArchiveResponse("CAS-123"))
+        val submissionArchiveRequest: SubmissionArchiveRequest = SubmissionArchiveRequest("", "", "", "")
+
+        val result: Future[Result] = Helpers.call(controller().archiveSubmission(), fakeCasRequest(submissionArchiveRequest))
+        whenReady(result) {
+          result =>
+            result.header.status mustBe OK
+        }
+      }
+    }
+
+    "return 500" when {
+      "invalid payload is submitted" in {
+        when(mockCasConnector.archiveSubmission(any(), any())(any(), any())) thenReturn Future.successful(SubmissionArchiveResponse("CAS-123"))
+
+        val result: Future[Result] = Helpers.call(controller().archiveSubmission(), fakeRequest)
+        whenReady(result.failed) {
+          result =>
+            result mustBe a[Exception]
         }
       }
     }

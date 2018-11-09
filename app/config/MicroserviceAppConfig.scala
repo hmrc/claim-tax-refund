@@ -30,6 +30,7 @@ class MicroserviceAppConfig @Inject()(override val runModeConfiguration: Configu
 
   val appName: String = runModeConfiguration.underlying.getString("appName")
   val fileUploadUrl: String = baseUrl("file-upload")
+  lazy val dmsApiUrl: String = baseUrl("dmsapi")
   val fileUploadFrontendUrl: String = baseUrl("file-upload-frontend")
   val fileUploadCallbackUrl: String = loadConfig("microservice.services.file-upload.callbackUrl")
   val pdfGeneratorUrl: String =  baseUrl("pdf-generator-service")

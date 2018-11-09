@@ -17,10 +17,11 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import models.{CallbackRequest, Submission}
+import connectors.CasConnector
+import models.{CallbackRequest, Submission, SubmissionArchiveRequest}
 import play.api.Logger
-import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.libs.json.{JsResult, JsValue, Json}
+import play.api.mvc.{Action, Result}
 import services.SubmissionService
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -30,7 +31,8 @@ import scala.concurrent.Future
 
 @Singleton
 class SubmissionController @Inject()(
-                                      val submissionService: SubmissionService
+                                      submissionService: SubmissionService,
+                                      casConnector: CasConnector
                                     ) extends BaseController {
 
   def submit(): Action[Submission] = Action.async(parse.json[Submission]) {
@@ -59,6 +61,27 @@ class SubmissionController @Inject()(
           Logger.warn(s"[SubmissionController][fileUploadCallback] callback for ${request.body.fileId} had status: ${request.body.status}")
           Future.successful(Ok)
       }
+  }
+
+  def archiveSubmission(): Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      val data: JsResult[SubmissionArchiveRequest] = request.body.validate[SubmissionArchiveRequest]
+
+      val response: Future[Result] = data.map {
+        submission =>
+          casConnector.archiveSubmission(submission.submissionRef, submission).map {
+          response =>
+            Logger.info(s"[SubmissionController][archiveSubmission] response received: $response")
+            Ok(Json.toJson(response))
+        }
+      }.getOrElse(Future.failed(new RuntimeException))
+
+      response.onFailure {
+        case e =>
+          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission: $data]", e)
+      }
+
+      response
   }
 
 }
