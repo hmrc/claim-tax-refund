@@ -27,15 +27,14 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Action, Request, Result}
+import play.api.libs.json.Json
+import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
 import util.WireMockHelper
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class SubmissionControllerSpec
   extends SpecBase
@@ -196,27 +195,29 @@ class SubmissionControllerSpec
   }
 
 	"ArchiveSubmission" must {
-		"return a casKey when sending a valid SubmissionArchiveRequest" in {
-			import com.github.tomakehurst.wiremock.client.WireMock._
+    "return a 200 response status" when {
+      "a valid SubmissionArchiveRequest is sent and a valid SubmissionArchiveResponse and cas key is returned" in {
+        when(mockCasConnector.archiveSubmission(any(), any())(any(), any())) thenReturn Future.successful(SubmissionArchiveResponse("CAS-123"))
+        val submissionArchiveRequest: SubmissionArchiveRequest = SubmissionArchiveRequest("", "", "", "")
 
-			server.stubFor(
-				post(urlEqualTo(s"/digital-form/archive/123"))
-					.willReturn(
-						aResponse()
-							.withStatus(200)
-							.withBody("""{"casKey": "cas-1234"}""")
-					)
-			)
+        val result: Future[Result] = Helpers.call(controller().archiveSubmission(), fakeCasRequest(submissionArchiveRequest))
+        whenReady(result) {
+          result =>
+            result.header.status mustBe OK
+        }
+      }
+    }
 
-			val submissionArchiveRequest: SubmissionArchiveRequest = SubmissionArchiveRequest("", "", "", "")
+    "return 500" when {
+      "invalid payload is submitted" in {
+        when(mockCasConnector.archiveSubmission(any(), any())(any(), any())) thenReturn Future.successful(SubmissionArchiveResponse("CAS-123"))
 
-			val result: Future[Result] = Helpers.call(controller().archiveSubmission(), fakeCasRequest(submissionArchiveRequest))
-			whenReady(result) {
-				result =>
-					println(s"#########\n\n\n\n${result}")
-					result.header.status mustBe OK
-			}
-
-		}
-	}
+        val result: Future[Result] = Helpers.call(controller().archiveSubmission(), fakeRequest)
+        whenReady(result.failed) {
+          result =>
+            result mustBe a[Exception]
+        }
+      }
+    }
+  }
 }
