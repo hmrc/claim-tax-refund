@@ -20,7 +20,7 @@ import com.google.inject.{Inject, Singleton}
 import connectors.CasConnector
 import models.{CallbackRequest, Submission, SubmissionArchiveRequest}
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsResult, JsValue, Json}
 import play.api.mvc.{Action, Result}
 import services.SubmissionService
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
@@ -65,7 +65,7 @@ class SubmissionController @Inject()(
 
   def archiveSubmission(): Action[JsValue] = Action.async(parse.json) {
     implicit request =>
-      val data = request.body.validate[SubmissionArchiveRequest]
+      val data: JsResult[SubmissionArchiveRequest] = request.body.validate[SubmissionArchiveRequest]
 
       val response: Future[Result] = data.map {
         submission =>
