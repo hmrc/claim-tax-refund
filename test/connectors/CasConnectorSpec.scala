@@ -50,12 +50,12 @@ class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHe
         post(urlEqualTo(s"/digital-form/archive/123"))
           .willReturn(
             aResponse()
-              .withStatus(200)
+              .withStatus(Status.OK)
               .withBody("""{"casKey": "cas-1234"}""")
           )
       )
 
-      val result= casConnector.archiveSubmission("123", submissionArchiveRequest)
+      val result = casConnector.archiveSubmission("123", submissionArchiveRequest)
 
       whenReady(result) {
         result =>
@@ -63,7 +63,23 @@ class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHe
       }
     }
 
-    "return a 400 when bad request" in {
+    "return an exception when unable to validate" in {
+      server.stubFor(
+        post(urlEqualTo(s"/digital-form/archive/123"))
+          .willReturn(
+            aResponse()
+              .withStatus(Status.OK)
+              .withBody("""{"wrongKey": "badValue"}""")
+          )
+      )
+
+      whenReady(casConnector.archiveSubmission("123", submissionArchiveRequest).failed) {
+        exception =>
+          exception.getMessage mustBe "[CasConnector][archiveSubmission] not a valid submission archive response"
+      }
+    }
+
+    "return a http exception when bad request" in {
       server.stubFor(
         post(urlEqualTo(s"/digital-form/archive/123"))
           .willReturn(
@@ -72,7 +88,7 @@ class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHe
           )
       )
 
-      val result= casConnector.archiveSubmission("123", submissionArchiveRequest)
+      val result = casConnector.archiveSubmission("123", submissionArchiveRequest)
 
       the[HttpException] thrownBy Await.result(result, 5 seconds)
     }

@@ -21,7 +21,8 @@ import com.google.inject.{ImplementedBy, Inject}
 import config.MicroserviceAppConfig
 import models.{SubmissionArchiveRequest, SubmissionArchiveResponse}
 import play.api.Logger
-import uk.gov.hmrc.http.HeaderCarrier
+import play.api.http.Status._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +34,24 @@ class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: Htt
     Logger.debug(s"Sending submission $submissionRef to CAS via DMS API")
 
     val url: String = s"${appConfig.dmsApiUrl}/digital-form/archive/$submissionRef"
-    http.POST[SubmissionArchiveRequest, SubmissionArchiveResponse](url, data)
+    val result: Future[SubmissionArchiveResponse] = http.POST[SubmissionArchiveRequest, HttpResponse](url, data).flatMap {
+      response =>
+        response.status match {
+          case OK =>
+            response.json.validate[SubmissionArchiveResponse].map(Future.successful).getOrElse {
+              Future.failed(new RuntimeException("[CasConnector][archiveSubmission] not a valid submission archive response"))
+            }
+          case _ =>
+            Future.failed(new RuntimeException(s"[CasConnector][archiveSubmission] failed to archive submission with status [${response.status}]"))
+        }
+    }
+
+    result.onFailure {
+      case e =>
+        Logger.error("[CasConnector][archiveSubmission] call to archive submission failed", e)
+    }
+
+    result
   }
 }
 
