@@ -37,7 +37,7 @@ class SubmissionService @Inject()(
   protected def removeExtension(fileName: String): String = fileName.split("\\.").head
   protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
   protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-iform.pdf"
-  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robot.xml"
+  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robotic.xml"
   protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
 
   def submit(submission: Submission)(implicit hc: HeaderCarrier): Future[SubmissionResponse] = {
