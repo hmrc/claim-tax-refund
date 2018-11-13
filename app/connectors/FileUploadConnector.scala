@@ -34,6 +34,8 @@ import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.audit.http.HttpAuditing
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import utils.HttpResponseHelper
 
@@ -44,12 +46,15 @@ import scala.concurrent.duration._
 @Singleton
 class FileUploadConnector @Inject()(
                                      appConfig: MicroserviceAppConfig,
+                                     val auditConnector: AuditConnector,
                                      val httpClient: HttpClient,
                                      val wsClient: WSClient,
                                      val metrics: Metrics
                                    )(implicit as: ActorSystem)
-  extends HttpResponseHelper {
+  extends HttpResponseHelper
+    with HttpAuditing {
 
+  override def appName: String = appConfig.appName
   private val connectionLogger = Logger(this.getClass)
 
   private val callbackUrl: String = appConfig.fileUploadCallbackUrl
@@ -99,25 +104,27 @@ class FileUploadConnector @Inject()(
     val multipartFormData: Source[MultipartFormData.Part[Source[ByteString, NotUsed]], NotUsed] =
       Source(FilePart("attachment", fileName, Some(contentType), Source(ByteString(byteArray) :: Nil)) :: DataPart("", "") :: Nil)
 
-    val result: Future[AnyRef with HttpResponse] =
+    val result: Future[HttpResponse] =
       wsClient.url(url)
         .withHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*)
         .post(multipartFormData).flatMap { response =>
 
-      response.status match {
-        case OK =>
-          connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
-          Future.successful(HttpResponse(response.status))
-        case _ =>
-          connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${response.status}"))
-          Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
+        response.status match {
+          case OK =>
+            connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
+            Future.successful(HttpResponse(response.status))
+          case _ =>
+            connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${response.status}"))
+            Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
+        }
       }
-    }
 
     result.onFailure {
       case e =>
         connectionLogger.error(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${e.getMessage}"), e)
     }
+
+    AuditingHook.apply(url = url, verb = "POST", body = Some(multipartFormData), responseF = result)
 
     result
   }
