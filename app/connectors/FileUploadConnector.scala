@@ -31,11 +31,12 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.mvc.MultipartFormData
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
+import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import utils.HttpResponseHelper
-import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -103,7 +104,7 @@ class FileUploadConnector @Inject()(
         .withHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*)
         .post(multipartFormData).flatMap { response =>
 
-      response.status match {
+        response.status match {
         case OK =>
           connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
           Future.successful(HttpResponse(response.status))
@@ -115,7 +116,7 @@ class FileUploadConnector @Inject()(
 
     result.onFailure {
       case e =>
-        connectionLogger.error(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${e.getMessage}"))
+        connectionLogger.error(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${e.getMessage}"), e)
     }
 
     result
