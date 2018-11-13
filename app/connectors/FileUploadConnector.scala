@@ -105,13 +105,13 @@ class FileUploadConnector @Inject()(
         .post(multipartFormData).flatMap { response =>
 
         response.status match {
-        case OK =>
-          connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
-          Future.successful(HttpResponse(response.status))
-        case _ =>
-          connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${response.status}"))
-          Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
-      }
+          case OK =>
+            connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
+            Future.successful(HttpResponse(response.status))
+          case _ =>
+            connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${response.status}"))
+            Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
+        }
     }
 
     result.onFailure {
