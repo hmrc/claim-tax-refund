@@ -22,11 +22,11 @@ val appName = "claim-tax-refund"
 val compile = Seq(
   ws,
   "uk.gov.hmrc" %% "simple-reactivemongo" % "7.12.0-play-25",
-  "uk.gov.hmrc" %% "bootstrap-play-25"    % "4.8.0"
+  "uk.gov.hmrc" %% "bootstrap-play-25"    % "4.9.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "uk.gov.hmrc"             %% "hmrctest"           % "3.4.0-play-25"     % scope,
+  "uk.gov.hmrc"             %% "hmrctest"           % "3.5.0-play-25"     % scope,
   "org.scalatest"           %% "scalatest"          % "2.2.6"             % scope,
   "org.pegdown"             % "pegdown"             % "1.6.0"             % scope,
   "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
