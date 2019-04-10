@@ -78,7 +78,7 @@ class SubmissionController @Inject()(
 
       response.onFailure {
         case e =>
-          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission: $data]", e)
+          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission:]", e)
       }
 
       response
