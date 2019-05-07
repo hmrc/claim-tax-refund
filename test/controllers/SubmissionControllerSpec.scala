@@ -28,7 +28,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.mvc.Result
+import play.api.mvc.{ControllerComponents, Result}
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
@@ -107,7 +107,9 @@ class SubmissionControllerSpec
     CallbackRequest(envelopeId, fileId, status, None)
   }
 
-  def controller() = new SubmissionController(mockSubmissionService, mockCasConnector)
+  lazy val controllerComponents: ControllerComponents = app.injector.instanceOf[ControllerComponents]
+
+  def controller() = new SubmissionController(mockSubmissionService, mockCasConnector, controllerComponents)
 
   "Submit" must {
     "return Ok with a envelopeId status" when {
