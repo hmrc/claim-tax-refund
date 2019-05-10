@@ -21,9 +21,9 @@ import connectors.CasConnector
 import models.{CallbackRequest, Submission, SubmissionArchiveRequest}
 import play.api.Logger
 import play.api.libs.json.{JsResult, JsValue, Json}
-import play.api.mvc.{Action, Result}
+import play.api.mvc.{Action, ControllerComponents, Result}
 import services.SubmissionService
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,8 +32,9 @@ import scala.concurrent.Future
 @Singleton
 class SubmissionController @Inject()(
                                       submissionService: SubmissionService,
-                                      casConnector: CasConnector
-                                    ) extends BaseController {
+                                      casConnector: CasConnector,
+                                      controllerComponents: ControllerComponents
+                                    ) extends BackendController(controllerComponents) {
 
   def submit(): Action[Submission] = Action.async(parse.json[Submission]) {
     implicit request =>

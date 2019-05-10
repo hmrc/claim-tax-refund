@@ -21,24 +21,25 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.16.0-play-25",
-  "uk.gov.hmrc" %% "bootstrap-play-25"    % "4.9.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.19.0-play-26",
+  "uk.gov.hmrc" %% "bootstrap-play-26"    % "0.37.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "uk.gov.hmrc"             %% "hmrctest"           % "3.6.0-play-25"     % scope,
+  "uk.gov.hmrc"             %% "hmrctest"           % "3.8.0-play-26"     % scope,
   "org.scalatest"           %% "scalatest"          % "2.2.6"             % scope,
   "org.pegdown"             % "pegdown"             % "1.6.0"             % scope,
   "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
   "org.scalatestplus.play"  %% "scalatestplus-play" % "2.0.1"             % scope,
   "org.mockito"             % "mockito-all"         % "1.10.19"           % scope,
   "org.scalacheck"          %% "scalacheck"         % "1.13.4"            % scope,
-  "com.github.tomakehurst"  % "wiremock"            % "2.15.0"            % scope
+  "com.github.tomakehurst"  % "wiremock"            % "2.21.0"            % scope,
+  "com.github.tomakehurst"  % "wiremock-jre8"       % "2.21.0"            % scope
 )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
   tests map {
-    test => new Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
+    test => Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
   }
 
 lazy val microservice = Project(appName, file("."))
@@ -51,8 +52,7 @@ lazy val microservice = Project(appName, file("."))
     fork in Test := true,
     libraryDependencies ++= appDependencies,
     retrieveManaged := true,
-    evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
-    routesGenerator := StaticRoutesGenerator
+    evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false)
   )
   .settings(
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;.*filters.*;.*handlers.*;.*components.*;.*repositories.*;" +
