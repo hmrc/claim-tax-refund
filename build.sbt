@@ -1,7 +1,5 @@
 import play.core.PlayVersion
-import play.routes.compiler.StaticRoutesGenerator
 import play.sbt.PlayImport.ws
-import play.sbt.routes.RoutesKeys.routesGenerator
 import sbt.Keys._
 import sbt.Tests.{Group, SubProcess}
 import sbt._
@@ -21,25 +19,25 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.20.0-play-26",
-  "uk.gov.hmrc" %% "bootstrap-play-26"    % "0.37.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.22.0-play-26",
+  "uk.gov.hmrc" %% "bootstrap-play-26"    % "1.0.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
   "uk.gov.hmrc"             %% "hmrctest"           % "3.9.0-play-26"     % scope,
-  "org.scalatest"           %% "scalatest"          % "2.2.6"             % scope,
+  "org.scalatest"           %% "scalatest"          % "3.0.8"             % scope,
   "org.pegdown"             % "pegdown"             % "1.6.0"             % scope,
   "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
-  "org.scalatestplus.play"  %% "scalatestplus-play" % "2.0.1"             % scope,
+  "org.scalatestplus.play"  %% "scalatestplus-play" % "3.1.2"             % scope,
   "org.mockito"             % "mockito-all"         % "1.10.19"           % scope,
-  "org.scalacheck"          %% "scalacheck"         % "1.13.4"            % scope,
-  "com.github.tomakehurst"  % "wiremock"            % "2.21.0"            % scope,
-  "com.github.tomakehurst"  % "wiremock-jre8"       % "2.21.0"            % scope
+  "org.scalacheck"          %% "scalacheck"         % "1.14.3"            % scope,
+  "com.github.tomakehurst"  % "wiremock"            % "2.25.1"            % scope,
+  "com.github.tomakehurst"  % "wiremock-jre8"       % "2.25.1"            % scope
 )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
-  tests map {
-    test => Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
+  tests.map { test =>
+    Group(test.name, Seq(test), SubProcess(ForkOptions().withRunJVMOptions(Vector(s"-Dtest.name=${test.name}"))))
   }
 
 lazy val microservice = Project(appName, file("."))
