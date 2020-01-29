@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,18 @@ package config
 import akka.actor.ActorSystem
 import org.scalacheck.Shrink
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
-import org.scalatestplus.play.{OneAppPerSuite, PlaySpec}
+import org.scalatestplus.mockito.MockitoSugar
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import org.scalatestplus.play.PlaySpec
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.inject.Injector
 import uk.gov.hmrc.http.HeaderCarrier
 
 trait SpecBase extends PlaySpec
-  with OneAppPerSuite
+  with GuiceOneAppPerSuite
   with ScalaFutures
   with MockitoSugar
-  with PropertyChecks {
+  with ScalaCheckPropertyChecks {
 
   implicit def dontShrink[A]: Shrink[A] = Shrink.shrinkAny
 
