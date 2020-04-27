@@ -19,6 +19,7 @@ package services
 import akka.actor.ActorSystem
 import com.google.inject.{Inject, Singleton}
 import connectors.{FileUploadConnector, PDFConnector}
+import controllers.SubmissionController
 import models.{Envelope, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import play.Logger
@@ -31,6 +32,8 @@ class SubmissionService @Inject()(
                                    val fileUploadConnector: FileUploadConnector,
                                    val pdfConnector: PDFConnector
                                  )(implicit as: ActorSystem) {
+
+  private val logger = play.api.Logger(classOf[SubmissionController])
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -84,7 +87,7 @@ class SubmissionService @Inject()(
 
     result.onFailure {
       case e =>
-        Logger.error("[SubmissionService][submit] submit failed: ", e)
+        logger.error("[SubmissionService][submit] submit failed: ", e)
     }
 
     result
@@ -99,11 +102,11 @@ class SubmissionService @Inject()(
               case Some(files) if files.count(file => file.status == "AVAILABLE") == 3 =>
                 fileUploadConnector.closeEnvelope(envelopeId)
               case _ =>
-                Logger.info("[SubmissionService][fileUploadCallback] incomplete, waiting for files")
+                logger.info("[SubmissionService][fileUploadCallback] incomplete, waiting for files")
                 Future.successful(envelopeId)
             }
           case _ =>
-            Logger.error(s"[SubmissionService][fileUploadCallback] envelope: $envelopeId not open instead status: ${envelope.status}")
+            logger.error(s"[SubmissionService][fileUploadCallback] envelope: $envelopeId not open instead status: ${envelope.status}")
             Future.successful(envelopeId)
         }
     }
