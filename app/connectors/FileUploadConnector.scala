@@ -79,7 +79,7 @@ class FileUploadConnector @Inject()(
       response.status match {
         case CREATED =>
           val res: Option[Future[String]] = envelopeId(response).map(Future.successful)
-          Logger.info(s"[FileUploadConnector][createEnvelope] Envelope created $res")
+          connectionLogger.info(s"[FileUploadConnector][createEnvelope] Envelope created $res")
           res.getOrElse {
             Future.failed(new RuntimeException("No envelope id returned by file upload service"))
           }
@@ -90,7 +90,7 @@ class FileUploadConnector @Inject()(
 
     result.onFailure {
       case e =>
-        Logger.error("[FileUploadConnector][createEnvelope] - call to create envelope failed", e)
+        connectionLogger.error("[FileUploadConnector][createEnvelope] - call to create envelope failed", e)
     }
 
     result
@@ -106,7 +106,7 @@ class FileUploadConnector @Inject()(
 
     val result: Future[HttpResponse] =
       wsClient.url(url)
-        .withHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*)
+        .withHttpHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*)
         .post(multipartFormData).flatMap { response =>
 
         response.status match {
@@ -139,7 +139,7 @@ class FileUploadConnector @Inject()(
           }
         case BAD_REQUEST =>
           if (response.body.contains("Routing request already received for envelope")) {
-            Logger.warn(s"[FileUploadConnector][closeEnvelope] Routing request already received for envelope")
+            connectionLogger.warn(s"[FileUploadConnector][closeEnvelope] Routing request already received for envelope")
             Future.successful("Already Closed")
           } else {
             Future.failed(new RuntimeException("failed with status 400 bad request"))
@@ -151,7 +151,7 @@ class FileUploadConnector @Inject()(
 
     result.onFailure {
       case e =>
-        Logger.error("[FileUploadConnector][closeEnvelope] call to close envelope failed", e)
+        connectionLogger.error("[FileUploadConnector][closeEnvelope] call to close envelope failed", e)
     }
 
     result

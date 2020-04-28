@@ -19,8 +19,8 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.22.0-play-26",
-  "uk.gov.hmrc" %% "bootstrap-play-26"    % "1.0.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.26.0-play-26",
+  "uk.gov.hmrc" %% "bootstrap-play-26"    % "1.3.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
@@ -44,6 +44,7 @@ lazy val microservice = Project(appName, file("."))
   .enablePlugins(Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory) ++ plugins: _*)
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
+  .settings(scalaVersion := "2.12.11")
   .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
   .settings(

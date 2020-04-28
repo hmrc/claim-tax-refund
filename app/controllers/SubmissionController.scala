@@ -17,7 +17,7 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import connectors.CasConnector
+import connectors.{CasConnector, CasConnectorImpl}
 import models.{CallbackRequest, Submission, SubmissionArchiveRequest}
 import play.api.Logger
 import play.api.libs.json.{JsResult, JsValue, Json}
@@ -36,17 +36,19 @@ class SubmissionController @Inject()(
                                       controllerComponents: ControllerComponents
                                     ) extends BackendController(controllerComponents) {
 
+  private val logger = play.api.Logger(classOf[SubmissionController])
+
   def submit(): Action[Submission] = Action.async(parse.json[Submission]) {
     implicit request =>
       val result = submissionService.submit(request.body).map {
         response =>
-          Logger.info(s"[SubmissionController][submit] processed submission $response")
+          logger.info(s"[SubmissionController][submit] processed submission $response")
           Ok(Json.toJson(response))
       }
 
       result.onFailure {
         case e =>
-          Logger.error(s"[SubmissionController][submit][exception returned when processing submission]", e)
+          logger.error(s"[SubmissionController][submit][exception returned when processing submission]", e)
       }
 
       result
@@ -54,12 +56,12 @@ class SubmissionController @Inject()(
 
   def callback(): Action[CallbackRequest] = Action.async(parse.json[CallbackRequest]) {
     implicit request =>
-      Logger.info(s"[SubmissionController][callback] processing callback ${request.body}")
+      logger.info(s"[SubmissionController][callback] processing callback ${request.body}")
       request.body.status match {
         case "AVAILABLE" =>
           submissionService.fileUploadCallback(request.body.envelopeId).map(_ => Ok)
         case _ =>
-          Logger.warn(s"[SubmissionController][fileUploadCallback] callback for ${request.body.fileId} had status: ${request.body.status}")
+          logger.warn(s"[SubmissionController][fileUploadCallback] callback for ${request.body.fileId} had status: ${request.body.status}")
           Future.successful(Ok)
       }
   }
@@ -72,14 +74,14 @@ class SubmissionController @Inject()(
         submission =>
           casConnector.archiveSubmission(submission.submissionRef, submission).map {
           response =>
-            Logger.info(s"[SubmissionController][archiveSubmission] response received: $response")
+            logger.info(s"[SubmissionController][archiveSubmission] response received: $response")
             Ok(Json.toJson(response))
         }
       }.getOrElse(Future.failed(new RuntimeException))
 
       response.onFailure {
         case e =>
-          Logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission:]", e)
+          logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission:]", e)
       }
 
       response

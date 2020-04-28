@@ -30,8 +30,10 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: HttpClient) extends CasConnector {
 
+  private val logger = play.api.Logger(classOf[CasConnectorImpl])
+
   def archiveSubmission(submissionRef: String, data: SubmissionArchiveRequest)(implicit hc: HeaderCarrier, ec:ExecutionContext): Future[SubmissionArchiveResponse] = {
-    Logger.debug(s"Sending submission $submissionRef to CAS via DMS API")
+    logger.debug(s"Sending submission $submissionRef to CAS via DMS API")
 
     val url: String = s"${appConfig.dmsApiUrl}/digital-form/archive/$submissionRef"
     val result: Future[SubmissionArchiveResponse] = http.POST[SubmissionArchiveRequest, HttpResponse](url, data).flatMap {
@@ -48,7 +50,7 @@ class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: Htt
 
     result.onFailure {
       case e =>
-        Logger.error("[CasConnector][archiveSubmission] call to archive submission failed", e)
+        logger.error("[CasConnector][archiveSubmission] call to archive submission failed", e)
     }
 
     result
