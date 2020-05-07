@@ -31,8 +31,8 @@ def test(scope: String = "test"): Seq[ModuleID] = Seq(
   "org.scalatestplus.play"  %% "scalatestplus-play" % "3.1.2"             % scope,
   "org.mockito"             % "mockito-all"         % "1.10.19"           % scope,
   "org.scalacheck"          %% "scalacheck"         % "1.14.3"            % scope,
-  "com.github.tomakehurst"  % "wiremock"            % "2.25.1"            % scope,
-  "com.github.tomakehurst"  % "wiremock-jre8"       % "2.25.1"            % scope
+  "com.github.tomakehurst"  % "wiremock"            % "2.26.3"            % scope,
+  "com.github.tomakehurst"  % "wiremock-jre8"       % "2.26.3"            % scope
 )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
