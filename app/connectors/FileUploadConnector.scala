@@ -16,6 +16,8 @@
 
 package connectors
 
+import java.util.concurrent.Callable
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.pattern.Patterns.after
@@ -88,7 +90,7 @@ class FileUploadConnector @Inject()(
       }
     }
 
-    result.onFailure {
+    result.failed.foreach {
       case e =>
         connectionLogger.error("[FileUploadConnector][createEnvelope] - call to create envelope failed", e)
     }
@@ -119,7 +121,7 @@ class FileUploadConnector @Inject()(
         }
       }
 
-    result.onFailure {
+    result.failed.foreach {
       case e =>
         connectionLogger.error(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${e.getMessage}"), e)
     }
@@ -149,7 +151,7 @@ class FileUploadConnector @Inject()(
       }
     }
 
-    result.onFailure {
+    result.failed.foreach {
       case e =>
         connectionLogger.error("[FileUploadConnector][closeEnvelope] call to close envelope failed", e)
     }
@@ -171,8 +173,9 @@ class FileUploadConnector @Inject()(
         val nextTry: Int = Math.ceil(cur * factor).toInt
         val nextAttempt = attempt + 1
 
-        after(nextTry.milliseconds, as.scheduler, global, Future.successful(1)).flatMap { _ =>
-          envelopeSummary(envelopeId, nextTry, nextAttempt)(as, hc)
+        after(nextTry.milliseconds, as.scheduler, global, new Callable[Future[Int]]{
+          override def call(): Future[Int] = Future.successful(1) }).flatMap { _ =>
+          envelopeSummary(envelopeId, nextTry, nextAttempt)(hc)
         }
       case _ =>
         Future.failed(new RuntimeException(s"[FileUploadConnector][retry] envelope[$envelopeId] summary failed at attempt: $attempt"))
@@ -180,7 +183,7 @@ class FileUploadConnector @Inject()(
   }
 
   def envelopeSummary(envelopeId: String, nextTry: Int = firstRetryMilliseconds, attempt: Int = 1)
-                     (implicit as: ActorSystem, hc: HeaderCarrier): Future[Envelope] = {
+                     (implicit hc: HeaderCarrier): Future[Envelope] = {
     httpClient.GET(s"$fileUploadUrl/file-upload/envelopes/$envelopeId").flatMap {
       response =>
         response.status match {

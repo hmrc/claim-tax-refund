@@ -38,7 +38,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     reset(mockPDFConnector)
   }
 
-  private val submissionService = new SubmissionService(mockFileUploadConnector, mockPDFConnector)(as)
+  private val submissionService = new SubmissionService(mockFileUploadConnector, mockPDFConnector)
   private val fakeSubmission = Submission("pdf", "metadata", "xml")
 
   protected def removeExtension(fileName: String): String = fileName.split("\\.").head
@@ -49,7 +49,6 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
 
   private val envelopeId = "env123"
   private val byteArray: Array[Byte] = "test".getBytes
-  private val testHtml = "<html></html>"
 
   private val threeAvailableFiles = Seq(File("file1", "AVAILABLE"), File("file2", "AVAILABLE"), File("file3", "AVAILABLE"))
   private val threeFiles = Seq(File("file1", "AVAILABLE"), File("file2", "QUARANTINED"), File("file3", "AVAILABLE"))
@@ -68,7 +67,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
         val pdf = fakeSubmission.pdf.getBytes
 
         when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(envelopeId)
-        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithThreeFiles)
+        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(envelopeWithThreeFiles)
         when(mockPDFConnector.generatePDF(any())) thenReturn Future.successful(pdf)
 
         when(mockFileUploadConnector.uploadFile(any(), eqTo(metadataFileName(envelopeId)), eqTo("application/xml"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200))
@@ -90,7 +89,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     "return an error" when {
       "submit fails" in {
         when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.failed(new RuntimeException)
-        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithThreeFiles)
+        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(envelopeWithThreeFiles)
         when(mockPDFConnector.generatePDF(any())) thenReturn Future.successful(byteArray)
 
         val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
@@ -103,7 +102,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
 
       "given a closed envelope" in {
         when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(envelopeId)
-        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(closedEnvelopeWithThreeFiles)
+        when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(closedEnvelopeWithThreeFiles)
         when(mockPDFConnector.generatePDF(any())) thenReturn Future.successful(byteArray)
 
         val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
@@ -119,7 +118,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
 
   "fileUploadCallback" must {
     "return an envelopeId string when Envelope status is OPEN" in {
-      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(Envelope(envelopeId, None, "OPEN", None))
+      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(Envelope(envelopeId, None, "OPEN", None))
 
       val result: Future[String] = submissionService.fileUploadCallback(envelopeId)
 
@@ -130,7 +129,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     }
 
     "return an envelopeId string when Envelope status is something other than OPEN" in {
-      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(Envelope(envelopeId, None, "INFECTED", None))
+      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(Envelope(envelopeId, None, "INFECTED", None))
 
       val result: Future[String] = submissionService.fileUploadCallback(envelopeId)
 
@@ -141,7 +140,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     }
 
     "run closeEnvelope once if count of file status AVAILABLE == 3" in {
-      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithThreeAvailableFiles)
+      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(envelopeWithThreeAvailableFiles)
       when(mockFileUploadConnector.closeEnvelope(any())(any())) thenReturn Future.successful(envelopeId)
 
       val result = submissionService.fileUploadCallback(envelopeId)
@@ -153,7 +152,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     }
 
     "not run closeEnvelope once if count of file status AVAILABLE < 3" in {
-      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithTwoFiles)
+      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(envelopeWithTwoFiles)
 
       val result = submissionService.fileUploadCallback(envelopeId)
 
@@ -164,7 +163,7 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     }
 
     "not run closeEnvelope once if count of file status AVAILABLE != 3" in {
-      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any(), any())) thenReturn Future.successful(envelopeWithThreeFiles)
+      when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(envelopeWithThreeFiles)
 
       val result = submissionService.fileUploadCallback(envelopeId)
 

@@ -29,6 +29,7 @@ import util.WireMockHelper
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 
 class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHelper {
 

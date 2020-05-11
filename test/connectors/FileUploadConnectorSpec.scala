@@ -281,7 +281,7 @@ class FileUploadConnectorSpec
                 )
             )
 
-            whenReady(connector.envelopeSummary(envId)(as, hc)) {
+            whenReady(connector.envelopeSummary(envId)(hc)) {
               result =>
                 result mustBe Envelope(envId, None, envelopeStatus, None)
             }
@@ -313,7 +313,7 @@ class FileUploadConnectorSpec
             )
 
             whenever(files.nonEmpty) {
-              whenReady(connector.envelopeSummary(envId)(as, hc)) {
+              whenReady(connector.envelopeSummary(envId)(hc)) {
                 result =>
                   result mustBe Envelope(envId, None, envelopeStatus, Some(files))
               }
@@ -379,7 +379,7 @@ class FileUploadConnectorSpec
             )
 
             whenever(returnStatus != Status.NOT_FOUND) {
-              whenReady(connector.envelopeSummary(envId)(as, hc).failed) {
+              whenReady(connector.envelopeSummary(envId)(hc).failed) {
                 exception =>
                   exception mustBe a[RuntimeException]
               }

@@ -26,6 +26,7 @@ import util.WireMockHelper
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 
 class PDFConnectorSpec extends SpecBase with WireMockHelper {

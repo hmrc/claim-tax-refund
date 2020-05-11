@@ -10,6 +10,8 @@ import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 import uk.gov.hmrc.versioning.SbtGitVersioning
 import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
+import play.sbt.routes.RoutesKeys
+
 
 lazy val appDependencies: Seq[ModuleID] = compile ++ test()
 lazy val plugins: Seq[Plugins] = Seq.empty
@@ -47,6 +49,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(scalaVersion := "2.12.11")
   .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
+  .settings(RoutesKeys.routesImport := Seq.empty)
   .settings(
     fork in Test := true,
     libraryDependencies ++= appDependencies,
@@ -66,4 +69,17 @@ lazy val microservice = Project(appName, file("."))
     Resolver.bintrayRepo("hmrc", "releases"),
     Resolver.jcenterRepo
   ))
-  .settings(majorVersion := 0)
+  .settings(
+    majorVersion := 0,
+    // ***************
+    // Use the silencer plugin to suppress warnings from unused imports in compiled twirl templates
+    scalacOptions += "-P:silencer:pathFilters=routes",
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.6.0" cross CrossVersion.full),
+      "com.github.ghik" % "silencer-lib" % "1.6.0" % Provided cross CrossVersion.full
+    )
+    // ***************
+  )
+  .settings(
+    scalacOptions += "-feature"
+  )
