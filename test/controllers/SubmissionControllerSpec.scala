@@ -141,7 +141,7 @@ class SubmissionControllerSpec
         forAll(response) {
           res =>
             when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
             when(mockSubmissionService.fileUploadCallback(eqTo(res.envelopeId))(any())) thenReturn Future.successful(res.envelopeId)
 
             val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
@@ -160,7 +160,7 @@ class SubmissionControllerSpec
         forAll(response, minSuccessful(10), maxDiscardedFactor(20.0)) {
           res =>
             when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
             when(mockSubmissionService.fileUploadCallback(eqTo(res.envelopeId))(any())) thenReturn Future.successful(res.envelopeId)
 
             val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))
@@ -180,7 +180,7 @@ class SubmissionControllerSpec
         forAll(response, minSuccessful(10), maxDiscardedFactor(20.0)) {
           res =>
             when(mockFileUploadConnector.createEnvelope(any())) thenReturn Future.successful(res.envelopeId)
-            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any(), any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
+            when(mockFileUploadConnector.envelopeSummary(eqTo(res.envelopeId), eqTo(1), eqTo(5))(any())) thenReturn Future.successful(envelope(res.envelopeId, res.fileId, res.status))
             when(mockSubmissionService.fileUploadCallback(eqTo(res.envelopeId))(any())) thenReturn Future.successful(res.envelopeId)
 
             val callback: Future[Result] = Helpers.call(controller().callback(), fakeCallbackRequestAvailable(res.envelopeId, res.fileId, res.status))

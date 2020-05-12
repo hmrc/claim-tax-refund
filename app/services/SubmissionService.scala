@@ -16,13 +16,11 @@
 
 package services
 
-import akka.actor.ActorSystem
 import com.google.inject.{Inject, Singleton}
 import connectors.{FileUploadConnector, PDFConnector}
 import controllers.SubmissionController
 import models.{Envelope, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
-import play.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -31,7 +29,7 @@ import scala.concurrent.Future
 class SubmissionService @Inject()(
                                    val fileUploadConnector: FileUploadConnector,
                                    val pdfConnector: PDFConnector
-                                 )(implicit as: ActorSystem) {
+                                 ) {
 
   private val logger = play.api.Logger(classOf[SubmissionController])
 
@@ -85,7 +83,7 @@ class SubmissionService @Inject()(
     }
 
 
-    result.onFailure {
+    result.failed.foreach {
       case e =>
         logger.error("[SubmissionService][submit] submit failed: ", e)
     }

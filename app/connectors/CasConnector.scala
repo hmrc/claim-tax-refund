@@ -20,7 +20,6 @@ import javax.inject.Singleton
 import com.google.inject.{ImplementedBy, Inject}
 import config.MicroserviceAppConfig
 import models.{SubmissionArchiveRequest, SubmissionArchiveResponse}
-import play.api.Logger
 import play.api.http.Status._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -48,7 +47,7 @@ class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: Htt
         }
     }
 
-    result.onFailure {
+    result.failed.foreach {
       case e =>
         logger.error("[CasConnector][archiveSubmission] call to archive submission failed", e)
     }

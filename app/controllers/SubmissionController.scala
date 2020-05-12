@@ -17,13 +17,12 @@
 package controllers
 
 import com.google.inject.{Inject, Singleton}
-import connectors.{CasConnector, CasConnectorImpl}
+import connectors.CasConnector
 import models.{CallbackRequest, Submission, SubmissionArchiveRequest}
-import play.api.Logger
 import play.api.libs.json.{JsResult, JsValue, Json}
 import play.api.mvc.{Action, ControllerComponents, Result}
 import services.SubmissionService
-import uk.gov.hmrc.play.bootstrap.controller.{BackendController, BaseController}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -46,7 +45,7 @@ class SubmissionController @Inject()(
           Ok(Json.toJson(response))
       }
 
-      result.onFailure {
+      result.failed.foreach {
         case e =>
           logger.error(s"[SubmissionController][submit][exception returned when processing submission]", e)
       }
@@ -79,7 +78,7 @@ class SubmissionController @Inject()(
         }
       }.getOrElse(Future.failed(new RuntimeException))
 
-      response.onFailure {
+      response.failed.foreach {
         case e =>
           logger.error(s"[SubmissionController][archiveSubmission][exception returned when archiving submission:]", e)
       }
