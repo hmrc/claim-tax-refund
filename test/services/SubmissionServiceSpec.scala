@@ -70,9 +70,9 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
         when(mockFileUploadConnector.envelopeSummary(any(), any(), any())(any())) thenReturn Future.successful(envelopeWithThreeFiles)
         when(mockPDFConnector.generatePDF(any())) thenReturn Future.successful(pdf)
 
-        when(mockFileUploadConnector.uploadFile(any(), eqTo(metadataFileName(envelopeId)), eqTo("application/xml"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200))
-        when(mockFileUploadConnector.uploadFile(any(), eqTo(xmlFileName(envelopeId)), eqTo("application/xml"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200))
-        when(mockFileUploadConnector.uploadFile(any(), any(), eqTo("application/pdf"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200))
+        when(mockFileUploadConnector.uploadFile(any(), eqTo(metadataFileName(envelopeId)), eqTo("application/xml"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200, ""))
+        when(mockFileUploadConnector.uploadFile(any(), eqTo(xmlFileName(envelopeId)), eqTo("application/xml"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200, ""))
+        when(mockFileUploadConnector.uploadFile(any(), any(), eqTo("application/pdf"), any(), any())(any())) thenReturn Future.successful(HttpResponse(200, ""))
 
         val result: Future[SubmissionResponse] = submissionService.submit(fakeSubmission)
 

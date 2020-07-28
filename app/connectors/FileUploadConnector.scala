@@ -99,7 +99,7 @@ class FileUploadConnector @Inject()(
   }
 
   def uploadFile(byteArray: Array[Byte], fileName: String, contentType: String, envelopeId: String, fileId: String)
-                (implicit hc: HeaderCarrier): Future[HttpResponse] = {
+                (implicit hc: HeaderCarrier): Future[HttpResponse] =  {
     val url: String =
       s"$fileUploadFrontEndUrl/file-upload/upload/envelopes/$envelopeId/files/$fileId"
 
@@ -114,7 +114,7 @@ class FileUploadConnector @Inject()(
         response.status match {
           case OK =>
             connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = "ok"))
-            Future.successful(HttpResponse(response.status))
+            Future.successful(HttpResponse(response.status, ""))
           case _ =>
             connectionLogger.info(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${response.status}"))
             Future.failed(new RuntimeException(s"failed with status [${response.status}]"))
@@ -125,9 +125,6 @@ class FileUploadConnector @Inject()(
       case e =>
         connectionLogger.error(formatMessage(ld = hc, method = "POST", uri = url, startAge = hc.age, message = s"${e.getMessage}"), e)
     }
-
-    AuditingHook.apply(url = url, verb = "POST", body = Some(multipartFormData), responseF = result)
-
     result
   }
 
