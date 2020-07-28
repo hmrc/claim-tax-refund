@@ -428,7 +428,7 @@ class FileUploadConnectorSpec
         envId =>
           val url = s"file-upload/envelopes/$envId"
           val header = Map("Location" -> Seq(url))
-          val httpResponse = HttpResponse(responseStatus = 200, responseHeaders = header)
+          val httpResponse = HttpResponse(status = 200, body = "", headers = header)
 
           val result = connector.envelopeId(httpResponse)
 
