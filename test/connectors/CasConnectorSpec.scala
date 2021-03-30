@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHe
       }
     }
 
-    "return a http exception when bad request" in {
+    "return an exception when bad request" in {
       server.stubFor(
         post(urlEqualTo(s"/digital-form/archive/123"))
           .willReturn(
@@ -91,7 +91,7 @@ class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHe
 
       val result = casConnector.archiveSubmission("123", submissionArchiveRequest)
 
-      the[HttpException] thrownBy Await.result(result, 5 seconds)
+      the[RuntimeException] thrownBy Await.result(result, 5 seconds)
     }
   }
 
