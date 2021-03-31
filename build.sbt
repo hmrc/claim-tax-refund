@@ -21,16 +21,15 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.30.0-play-26",
-  "uk.gov.hmrc" %% "bootstrap-play-26"    % "2.1.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.30.0-play-27",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-27"    % "3.3.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "uk.gov.hmrc"             %% "hmrctest"           % "3.9.0-play-26"     % scope,
   "org.scalatest"           %% "scalatest"          % "3.0.8"             % scope,
   "org.pegdown"             % "pegdown"             % "1.6.0"             % scope,
   "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
-  "org.scalatestplus.play"  %% "scalatestplus-play" % "3.1.3"             % scope,
+  "org.scalatestplus.play"  %% "scalatestplus-play" % "4.0.3"             % scope,
   "org.mockito"             % "mockito-all"         % "1.10.19"           % scope,
   "org.scalacheck"          %% "scalacheck"         % "1.15.1"            % scope,
   "com.github.tomakehurst"  % "wiremock"            % "2.26.3"            % scope,
@@ -43,7 +42,7 @@ def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
   }
 
 lazy val microservice = Project(appName, file("."))
-  .enablePlugins(Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory) ++ plugins: _*)
+  .enablePlugins(Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin) ++ plugins: _*)
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
   .settings(scalaVersion := "2.12.12")
