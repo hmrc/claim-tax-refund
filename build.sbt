@@ -21,8 +21,8 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.30.0-play-27",
-  "uk.gov.hmrc" %% "bootstrap-backend-play-27"    % "3.3.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.31.0-play-27",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-27"    % "4.2.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
@@ -31,7 +31,7 @@ def test(scope: String = "test"): Seq[ModuleID] = Seq(
   "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
   "org.scalatestplus.play"  %% "scalatestplus-play" % "4.0.3"             % scope,
   "org.mockito"             % "mockito-all"         % "1.10.19"           % scope,
-  "org.scalacheck"          %% "scalacheck"         % "1.15.1"            % scope,
+  "org.scalacheck"          %% "scalacheck"         % "1.15.4"            % scope,
   "com.github.tomakehurst"  % "wiremock"            % "2.26.3"            % scope,
   "com.github.tomakehurst"  % "wiremock-jre8"       % "2.26.3"            % scope
 )
@@ -59,7 +59,7 @@ lazy val microservice = Project(appName, file("."))
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;.*filters.*;.*handlers.*;.*components.*;.*repositories.*;" +
       ".*BuildInfo.*;.*javascript.*;.*FrontendAuditConnector.*;.*Routes.*;.*GuiceInjector;.*DataCacheConnector;" +
       ".*ControllerConfiguration;.*LanguageSwitchController",
-    ScoverageKeys.coverageMinimum := 80,
+    ScoverageKeys.coverageMinimumStmtTotal := 80,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     parallelExecution in Test := false
