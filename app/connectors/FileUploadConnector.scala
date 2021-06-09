@@ -35,10 +35,9 @@ import play.api.mvc.MultipartFormData
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 import uk.gov.hmrc.http.logging.LoggingDetails
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpResponse}
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.http.HttpClient
 import utils.HttpResponseHelper
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -108,7 +107,7 @@ class FileUploadConnector @Inject()(
 
     val result: Future[HttpResponse] =
       wsClient.url(url)
-        .withHttpHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers: _*)
+        .withHttpHeaders(hc.copy(otherHeaders = Seq("CSRF-token" -> "nocheck")).headers(HeaderNames.explicitlyIncludedHeaders): _*)
         .post(multipartFormData).flatMap { response =>
 
         response.status match {
