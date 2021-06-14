@@ -5,10 +5,8 @@ import sbt.Tests.{Group, SubProcess}
 import sbt._
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings._
-import uk.gov.hmrc.{SbtAutoBuildPlugin, _}
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
-import uk.gov.hmrc.versioning.SbtGitVersioning
 import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 import play.sbt.routes.RoutesKeys
 
@@ -21,12 +19,12 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.31.0-play-27",
-  "uk.gov.hmrc" %% "bootstrap-backend-play-27"    % "4.2.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "8.0.0-play-27",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-27"    % "5.3.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "org.scalatest"           %% "scalatest"          % "3.0.8"             % scope,
+  "org.scalatest"           %% "scalatest"          % "3.0.9"             % scope,
   "org.pegdown"             % "pegdown"             % "1.6.0"             % scope,
   "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
   "org.scalatestplus.play"  %% "scalatestplus-play" % "4.0.3"             % scope,
@@ -42,7 +40,7 @@ def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
   }
 
 lazy val microservice = Project(appName, file("."))
-  .enablePlugins(Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin) ++ plugins: _*)
+  .enablePlugins(Seq(play.sbt.PlayScala, SbtDistributablesPlugin) ++ plugins: _*)
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
   .settings(scalaVersion := "2.12.12")
@@ -65,11 +63,13 @@ lazy val microservice = Project(appName, file("."))
     parallelExecution in Test := false
   )
   .settings(resolvers ++= Seq(
-    Resolver.bintrayRepo("hmrc", "releases"),
     Resolver.jcenterRepo
   ))
   .settings(
     majorVersion := 0
+  )
+  .settings(
+    isPublicArtefact := true
   )
   .settings(
     // ***************
