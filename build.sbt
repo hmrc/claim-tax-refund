@@ -19,19 +19,21 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "8.0.0-play-27",
-  "uk.gov.hmrc" %% "bootstrap-backend-play-27"    % "5.3.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo"         % "8.0.0-play-28",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-28"    % "5.3.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "org.scalatest"           %% "scalatest"          % "3.0.9"             % scope,
-  "org.pegdown"             % "pegdown"             % "1.6.0"             % scope,
-  "com.typesafe.play"       %% "play-test"          % PlayVersion.current % scope,
-  "org.scalatestplus.play"  %% "scalatestplus-play" % "4.0.3"             % scope,
-  "org.mockito"             % "mockito-all"         % "1.10.19"           % scope,
-  "org.scalacheck"          %% "scalacheck"         % "1.15.4"            % scope,
-  "com.github.tomakehurst"  % "wiremock"            % "2.26.3"            % scope,
-  "com.github.tomakehurst"  % "wiremock-jre8"       % "2.26.3"            % scope
+  "org.pegdown"             % "pegdown"                   % "1.6.0"             % scope,
+  "com.typesafe.play"       %% "play-test"                % PlayVersion.current % scope,
+  "com.vladsch.flexmark"    %  "flexmark-all"             % "0.35.10",
+  "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2",
+  "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0",
+  "org.scalatestplus"       %% "scalatestplus-scalacheck" % "3.1.0.0-RC2",
+  "org.mockito"             % "mockito-all"               % "1.10.19"           % scope,
+  "org.scalacheck"          %% "scalacheck"               % "1.15.4"            % scope,
+  "com.github.tomakehurst"  % "wiremock"                  % "2.26.3"            % scope,
+  "com.github.tomakehurst"  % "wiremock-jre8"             % "2.26.3"            % scope
 )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
@@ -50,8 +52,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     fork in Test := true,
     libraryDependencies ++= appDependencies,
-    retrieveManaged := true,
-    evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false)
+    retrieveManaged := true
   )
   .settings(
     ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;.*filters.*;.*handlers.*;.*components.*;.*repositories.*;" +
