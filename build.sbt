@@ -19,21 +19,20 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc" %% "simple-reactivemongo"         % "8.0.0-play-28",
-  "uk.gov.hmrc" %% "bootstrap-backend-play-28"    % "5.3.0"
+  "uk.gov.hmrc" %% "simple-reactivemongo"         % "8.1.0-play-28",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-28"    % "5.24.0"
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "org.pegdown"             % "pegdown"                   % "1.6.0"             % scope,
+  "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % "5.25.0"            %scope ,
+  "org.pegdown"             %  "pegdown"                  % "1.6.0"             % scope,
   "com.typesafe.play"       %% "play-test"                % PlayVersion.current % scope,
-  "com.vladsch.flexmark"    %  "flexmark-all"             % "0.35.10",
   "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2",
-  "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0",
   "org.scalatestplus"       %% "scalatestplus-scalacheck" % "3.1.0.0-RC2",
-  "org.mockito"             % "mockito-all"               % "1.10.19"           % scope,
-  "org.scalacheck"          %% "scalacheck"               % "1.15.4"            % scope,
-  "com.github.tomakehurst"  % "wiremock"                  % "2.26.3"            % scope,
-  "com.github.tomakehurst"  % "wiremock-jre8"             % "2.26.3"            % scope
+  "org.mockito"             %  "mockito-all"              % "1.10.19"           % scope,
+  "org.scalacheck"          %% "scalacheck"               % "1.16.0"            % scope,
+  "com.github.tomakehurst"  %  "wiremock"                 % "2.27.2"            % scope,
+  "com.github.tomakehurst"  %  "wiremock-jre8"            % "2.27.2"            % scope
 )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
