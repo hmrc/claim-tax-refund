@@ -24,16 +24,16 @@ val compile = Seq(
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % "5.25.0"            %scope ,
-  "org.pegdown"             %  "pegdown"                  % "1.6.0"             % scope,
-  "com.typesafe.play"       %% "play-test"                % PlayVersion.current % scope,
+  "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % "5.25.0" ,
+  "org.pegdown"             %  "pegdown"                  % "1.6.0",
+  "com.typesafe.play"       %% "play-test"                % PlayVersion.current,
   "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2",
   "org.scalatestplus"       %% "scalatestplus-scalacheck" % "3.1.0.0-RC2",
-  "org.mockito"             %  "mockito-all"              % "1.10.19"           % scope,
-  "org.scalacheck"          %% "scalacheck"               % "1.16.0"            % scope,
-  "com.github.tomakehurst"  %  "wiremock"                 % "2.27.2"            % scope,
-  "com.github.tomakehurst"  %  "wiremock-jre8"            % "2.27.2"            % scope
-)
+  "org.mockito"             %  "mockito-all"              % "1.10.19",
+  "org.scalacheck"          %% "scalacheck"               % "1.16.0",
+  "com.github.tomakehurst"  %  "wiremock"                 % "2.27.2",
+  "com.github.tomakehurst"  %  "wiremock-jre8"            % "2.27.2"
+).map(_ % scope)
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
   tests.map { test =>
