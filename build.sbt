@@ -19,7 +19,6 @@ val appName = "claim-tax-refund"
 
 val compile = Seq(
   ws,
-  "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28"     % "0.73.0",
   "uk.gov.hmrc" %% "bootstrap-backend-play-28"    % "5.24.0"
 )
 
