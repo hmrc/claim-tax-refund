@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,7 @@ import play.api.libs.json.{JsResult, JsValue, Json}
 import play.api.mvc.{Action, ControllerComponents, Result}
 import services.SubmissionService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
 @Singleton
@@ -33,7 +31,7 @@ class SubmissionController @Inject()(
                                       submissionService: SubmissionService,
                                       casConnector: CasConnector,
                                       controllerComponents: ControllerComponents
-                                    ) extends BackendController(controllerComponents) {
+                                    )(implicit ec: ExecutionContext) extends BackendController(controllerComponents) {
 
   private val logger = play.api.Logger(classOf[SubmissionController])
 

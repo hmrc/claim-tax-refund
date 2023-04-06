@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import uk.gov.hmrc.http.HttpResponse
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
 
@@ -37,6 +37,8 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
     reset(mockFileUploadConnector)
     reset(mockPDFConnector)
   }
+
+  implicit val ec: ExecutionContext = app.injector.instanceOf[ExecutionContext]
 
   private val submissionService = new SubmissionService(mockFileUploadConnector, mockPDFConnector)
   private val fakeSubmission = Submission("pdf", "metadata", "xml")
