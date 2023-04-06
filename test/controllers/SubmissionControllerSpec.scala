@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,10 @@ import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
 import services.SubmissionService
 import util.WireMockHelper
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.concurrent.Future
+
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubmissionControllerSpec
   extends SpecBase
@@ -51,7 +53,6 @@ class SubmissionControllerSpec
 				conf = "microservice.services.dmsapi.port" -> server.port
 			)
 			.build()
-
 
 	override def beforeEach(): Unit = {
     super.beforeEach()

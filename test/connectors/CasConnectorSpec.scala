@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,12 @@ import org.scalatest.concurrent.IntegrationPatience
 import play.api.Application
 import play.api.http.Status
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.http.HttpException
 import util.WireMockHelper
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class CasConnectorSpec extends SpecBase with IntegrationPatience with WireMockHelper {
 

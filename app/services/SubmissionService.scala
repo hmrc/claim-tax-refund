@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,15 @@ import models.{Envelope, Submission, SubmissionResponse}
 import org.joda.time.LocalDate
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SubmissionService @Inject()(
                                    val fileUploadConnector: FileUploadConnector,
                                    val pdfConnector: PDFConnector
-                                 ) {
+                                 )(implicit ec: ExecutionContext) {
 
   private val logger = play.api.Logger(classOf[SubmissionController])
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   protected def removeExtension(fileName: String): String = fileName.split("\\.").head
   protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
