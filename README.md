@@ -28,3 +28,14 @@ Port: 9869
 |-------|---------------|
 | /submit | The frontend submits to this endpoint |
 | /file-upload/callback | Callback endpoint for file upload |
+
+### Running locally
+
+To run the service locally:
+`sbt "run 9869"`
+
+#### Test Coverage
+
+To run the test coverage suite
+
+`sbt clean coverage test coverageReport`
