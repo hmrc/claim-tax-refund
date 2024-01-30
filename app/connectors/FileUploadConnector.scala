@@ -17,13 +17,12 @@
 package connectors
 
 import java.util.concurrent.Callable
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.pattern.Patterns.after
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.pattern.Patterns.after
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.google.inject.{Inject, Singleton}
-import com.kenshoo.play.metrics.Metrics
 import config.MicroserviceAppConfig
 import jdk.nashorn.internal.objects.Global
 import models.Envelope
@@ -48,8 +47,7 @@ class FileUploadConnector @Inject()(
                                      appConfig: MicroserviceAppConfig,
                                      val auditConnector: AuditConnector,
                                      val httpClient: HttpClient,
-                                     val wsClient: WSClient,
-                                     val metrics: Metrics
+                                     val wsClient: WSClient
                                    )(implicit ec: ExecutionContext, as: ActorSystem)
   extends HttpResponseHelper
     with HttpAuditing {

@@ -19,12 +19,14 @@ package services
 import config.SpecBase
 import connectors.{FileUploadConnector, PDFConnector}
 import models.{Envelope, File, Submission, SubmissionResponse}
-import org.joda.time.LocalDate
-import org.mockito.Matchers.{eq => eqTo, _}
+
+import java.time.LocalDate
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import uk.gov.hmrc.http.HttpResponse
 
+import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
@@ -44,10 +46,10 @@ class SubmissionServiceSpec extends SpecBase with BeforeAndAfterEach {
   private val fakeSubmission = Submission("pdf", "metadata", "xml")
 
   protected def removeExtension(fileName: String): String = fileName.split("\\.").head
-  protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
-  protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-iform.pdf"
-  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robotic.xml"
-  protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
+  protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}"
+  protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}-iform.pdf"
+  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}-robotic.xml"
+  protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}-metadata.xml"
 
   private val envelopeId = "env123"
   private val byteArray: Array[Byte] = "test".getBytes

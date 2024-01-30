@@ -16,11 +16,11 @@
 
 package controllers
 
-import akka.stream.Materializer
+import org.apache.pekko.stream.Materializer
 import config.SpecBase
 import connectors.{CasConnector, FileUploadConnector}
 import models._
-import org.mockito.Matchers.{eq => eqTo, _}
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.concurrent.IntegrationPatience
