@@ -20,9 +20,11 @@ import com.google.inject.{Inject, Singleton}
 import connectors.{FileUploadConnector, PDFConnector}
 import controllers.SubmissionController
 import models.{Envelope, Submission, SubmissionResponse}
-import org.joda.time.LocalDate
+
+import java.time.LocalDate
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -34,10 +36,10 @@ class SubmissionService @Inject()(
   private val logger = play.api.Logger(classOf[SubmissionController])
 
   protected def removeExtension(fileName: String): String = fileName.split("\\.").head
-  protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}"
-  protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-iform.pdf"
-  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-robotic.xml"
-  protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().toString("YYYYMMdd")}-metadata.xml"
+  protected def responseReference(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}"
+  protected def pdfFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}-iform.pdf"
+  protected def xmlFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}-robotic.xml"
+  protected def metadataFileName(envelopeId: String) = s"$envelopeId-SubmissionCTR-${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}-metadata.xml"
 
   def submit(submission: Submission)(implicit hc: HeaderCarrier): Future[SubmissionResponse] = {
 

@@ -16,17 +16,19 @@ lazy val plugins: Seq[Plugins] = Seq.empty
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 val appName = "claim-tax-refund"
-val bootstrapVersion = "7.15.0"
+val bootstrapVersion = "8.4.0"
+ThisBuild / majorVersion := 0
+ThisBuild / scalaVersion := "2.13.12"
 
-val compile = Seq(
+val compile: Seq[ModuleID] = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-backend-play-28"    % bootstrapVersion
+  "uk.gov.hmrc" %% "bootstrap-backend-play-30"    % bootstrapVersion
 )
 
 def test(scope: String = "test"): Seq[ModuleID] = Seq(
-  "uk.gov.hmrc"             %% "bootstrap-test-play-28"   % bootstrapVersion,
+  "uk.gov.hmrc"             %% "bootstrap-test-play-30"   % bootstrapVersion,
   "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2",
-  "org.scalatestplus"       %% "scalatestplus-scalacheck" % "3.1.0.0-RC2"
+  "org.scalatestplus"       %% "scalacheck-1-17"          % "3.2.16.0"
 ).map(_ % scope)
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
@@ -34,14 +36,10 @@ def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
     Group(test.name, Seq(test), SubProcess(ForkOptions().withRunJVMOptions(Vector(s"-Dtest.name=${test.name}"))))
   }
 
-val silencerVersion  = "1.7.12"
-
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(Seq(play.sbt.PlayScala, SbtDistributablesPlugin) ++ plugins: _*)
   .settings(playSettings: _*)
   .settings(scalaSettings: _*)
-  .settings(scalaVersion := "2.13.8")
-  .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
   .settings(RoutesKeys.routesImport := Seq.empty)
   .settings(
@@ -62,21 +60,10 @@ lazy val microservice = Project(appName, file("."))
     Resolver.jcenterRepo
   ))
   .settings(
-    majorVersion := 0
-  )
-  .settings(
     isPublicArtefact := true
   )
   .settings(
-    // ***************
-    // Use the silencer plugin to suppress warnings from unused imports in compiled twirl templates
-    scalacOptions += "-P:silencer:pathFilters=routes",
-    scalacOptions += "-P:silencer:lineContentFilters=^\\w",
-    libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
-    )
-    // ***************
+    scalacOptions += "-Wconf:cat=unused-imports&src=routes/.*:s"
   )
   .settings(
     scalacOptions += "-feature"
