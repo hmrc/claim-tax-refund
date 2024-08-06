@@ -16,7 +16,7 @@ lazy val plugins: Seq[Plugins] = Seq.empty
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 val appName = "claim-tax-refund"
-val bootstrapVersion = "8.4.0"
+val bootstrapVersion = "9.1.0"
 ThisBuild / majorVersion := 0
 ThisBuild / scalaVersion := "2.13.12"
 

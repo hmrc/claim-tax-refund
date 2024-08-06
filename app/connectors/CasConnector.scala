@@ -22,13 +22,15 @@ import config.MicroserviceAppConfig
 import models.{SubmissionArchiveRequest, SubmissionArchiveResponse}
 import play.api.http.Status._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.{ExecutionContext, Future}
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.{StringContextOps}
 
 @Singleton
-class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: HttpClient) extends CasConnector {
+class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: HttpClientV2) extends CasConnector {
 
   private val logger = play.api.Logger(classOf[CasConnectorImpl])
 
@@ -36,16 +38,21 @@ class CasConnectorImpl @Inject()(appConfig: MicroserviceAppConfig, val http: Htt
     logger.debug(s"Sending submission $submissionRef to CAS via DMS API")
 
     val url: String = s"${appConfig.dmsApiUrl}/digital-form/archive/$submissionRef"
-    val result: Future[SubmissionArchiveResponse] = http.POST[SubmissionArchiveRequest, HttpResponse](url, data).flatMap {
-      response =>
-        response.status match {
-          case OK =>
-            response.json.validate[SubmissionArchiveResponse].map(Future.successful).getOrElse {
-              Future.failed(new RuntimeException("[CasConnector][archiveSubmission] not a valid submission archive response"))
+    val result: Future[SubmissionArchiveResponse] =
+      http
+        .post(url"$url")
+        .withBody(Json.toJson(data))
+        .execute[HttpResponse]
+        .flatMap {
+          response =>
+            response.status match {
+              case OK =>
+                response.json.validate[SubmissionArchiveResponse].map(Future.successful).getOrElse {
+                  Future.failed(new RuntimeException("[CasConnector][archiveSubmission] not a valid submission archive response"))
+                }
+              case _ =>
+                Future.failed(new RuntimeException(s"[CasConnector][archiveSubmission] failed to archive submission with status [${response.status}]"))
             }
-          case _ =>
-            Future.failed(new RuntimeException(s"[CasConnector][archiveSubmission] failed to archive submission with status [${response.status}]"))
-        }
     }
 
     result.failed.foreach {
