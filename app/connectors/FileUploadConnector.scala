@@ -34,7 +34,8 @@ import play.api.mvc.MultipartFormData
 import play.api.mvc.MultipartFormData.{DataPart, FilePart}
 import uk.gov.hmrc.http.logging.ConnectionTracing.formatNs
 import uk.gov.hmrc.http.logging.LoggingDetails
-import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, HttpClient, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, StringContextOps, HttpResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import utils.HttpResponseHelper
@@ -46,7 +47,7 @@ import scala.concurrent.duration._
 class FileUploadConnector @Inject()(
                                      appConfig: MicroserviceAppConfig,
                                      val auditConnector: AuditConnector,
-                                     val httpClient: HttpClient,
+                                     val httpClient: HttpClientV2,
                                      val wsClient: WSClient
                                    )(implicit ec: ExecutionContext, as: ActorSystem)
   extends HttpResponseHelper
@@ -71,19 +72,23 @@ class FileUploadConnector @Inject()(
   def createEnvelopeBody: JsValue = Json.obj("callbackUrl" -> callbackUrl)
 
   def createEnvelope(implicit hc: HeaderCarrier): Future[String] = {
-
-    val result: Future[String] = httpClient.POST[JsValue, HttpResponse](s"$fileUploadUrl/file-upload/envelopes", createEnvelopeBody).flatMap { response =>
-
-      response.status match {
-        case CREATED =>
-          val res: Option[Future[String]] = envelopeId(response).map(Future.successful)
-          connectionLogger.info(s"[FileUploadConnector][createEnvelope] Envelope created $res")
-          res.getOrElse {
-            Future.failed(new RuntimeException("No envelope id returned by file upload service"))
+    val url = s"$fileUploadUrl/file-upload/envelopes"
+    val result: Future[String] =
+      httpClient
+        .post(url"$url")
+        .withBody(Json.toJson(createEnvelopeBody))
+        .execute[HttpResponse]
+        .flatMap { response =>
+          response.status match {
+            case CREATED =>
+              val res: Option[Future[String]] = envelopeId(response).map(Future.successful)
+              connectionLogger.info(s"[FileUploadConnector][createEnvelope] Envelope created $res")
+              res.getOrElse {
+                Future.failed(new RuntimeException("No envelope id returned by file upload service"))
+              }
+            case _ =>
+              Future.failed(new RuntimeException(s"failed to create envelope with status [${response.status}]"))
           }
-        case _ =>
-          Future.failed(new RuntimeException(s"failed to create envelope with status [${response.status}]"))
-      }
     }
 
     result.failed.foreach {
@@ -126,22 +131,28 @@ class FileUploadConnector @Inject()(
 
   def closeEnvelope(envId: String)(implicit hc: HeaderCarrier): Future[String] = {
 
-    val result = httpClient.POST[JsValue, HttpResponse](s"$fileUploadUrl/file-routing/requests", routingRequest(envId)).flatMap { response =>
-      response.status match {
-        case CREATED =>
-          envelopeId(response).map(Future.successful).getOrElse {
-            Future.failed(new RuntimeException("No routing id returned"))
+    val url = s"$fileUploadUrl/file-routing/requests"
+    val result: Future[String] =
+      httpClient
+        .post(url"$url")
+        .withBody(Json.toJson(routingRequest(envId)))
+        .execute[HttpResponse]
+        .flatMap { response =>
+          response.status match {
+            case CREATED =>
+              envelopeId(response).map(Future.successful).getOrElse {
+                Future.failed(new RuntimeException("No routing id returned"))
+              }
+            case BAD_REQUEST =>
+              if (response.body.contains("Routing request already received for envelope")) {
+                connectionLogger.warn(s"[FileUploadConnector][closeEnvelope] Routing request already received for envelope")
+                Future.successful("Already Closed")
+              } else {
+                Future.failed(new RuntimeException("failed with status 400 bad request"))
+              }
+            case _ =>
+              Future.failed(new RuntimeException(s"failed to close envelope with status [${response.status}]"))
           }
-        case BAD_REQUEST =>
-          if (response.body.contains("Routing request already received for envelope")) {
-            connectionLogger.warn(s"[FileUploadConnector][closeEnvelope] Routing request already received for envelope")
-            Future.successful("Already Closed")
-          } else {
-            Future.failed(new RuntimeException("failed with status 400 bad request"))
-          }
-        case _ =>
-          Future.failed(new RuntimeException(s"failed to close envelope with status [${response.status}]"))
-      }
     }
 
     result.failed.foreach {
@@ -177,16 +188,20 @@ class FileUploadConnector @Inject()(
 
   def envelopeSummary(envelopeId: String, nextTry: Int = firstRetryMilliseconds, attempt: Int = 1)
                      (implicit hc: HeaderCarrier): Future[Envelope] = {
-    httpClient.GET(s"$fileUploadUrl/file-upload/envelopes/$envelopeId").flatMap {
-      response =>
-        response.status match {
-          case OK =>
-            parseEnvelope(response.body)
-          case NOT_FOUND =>
-            retry(envelopeId, nextTry, attempt)
-          case _ =>
-            Future.failed(new RuntimeException(s"[FileUploadConnector][envelopeSummary]Failed with status [${response.status}]"))
-        }
+    val url = s"$fileUploadUrl/file-upload/envelopes/$envelopeId"
+    httpClient
+      .get(url"$url")
+      .execute[HttpResponse]
+      .flatMap {
+        response =>
+          response.status match {
+            case OK =>
+              parseEnvelope(response.body)
+            case NOT_FOUND =>
+              retry(envelopeId, nextTry, attempt)
+            case _ =>
+              Future.failed(new RuntimeException(s"[FileUploadConnector][envelopeSummary]Failed with status [${response.status}]"))
+          }
     }
   }
 

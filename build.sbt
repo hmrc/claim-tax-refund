@@ -16,7 +16,7 @@ lazy val plugins: Seq[Plugins] = Seq.empty
 lazy val playSettings: Seq[Setting[_]] = Seq.empty
 
 val appName = "claim-tax-refund"
-val bootstrapVersion = "8.4.0"
+val bootstrapVersion = "9.1.0"
 ThisBuild / majorVersion := 0
 ThisBuild / scalaVersion := "2.13.12"
 
@@ -30,11 +30,6 @@ def test(scope: String = "test"): Seq[ModuleID] = Seq(
   "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2",
   "org.scalatestplus"       %% "scalacheck-1-17"          % "3.2.16.0"
 ).map(_ % scope)
-
-def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
-  tests.map { test =>
-    Group(test.name, Seq(test), SubProcess(ForkOptions().withRunJVMOptions(Vector(s"-Dtest.name=${test.name}"))))
-  }
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(Seq(play.sbt.PlayScala, SbtDistributablesPlugin) ++ plugins: _*)
